@@ -1,116 +1,275 @@
-# thesis-next - Thesis Management System
+<div align="center">
 
-![License: AGPL v3](https://img.shields.io/badge/License-AGPLv3-0a48b7.svg)
-![Next.js](https://img.shields.io/badge/Next.js-16-000.svg)
-![Prisma](https://img.shields.io/badge/Prisma-6-2d3748.svg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./.github/assets/maubisa-logo-white.png">
+  <img alt="Maubisa" src="./.github/assets/maubisa-logo.png" height="52">
+</picture>
 
-Platform **bimbingan skripsi** (thesis-supervision) yang siap dipakai kampus, instansi, atau
-tim bimbingan mandiri: progres BAB, penjadwalan sesi + Google Meet, dokumen berversi dengan
-anotasi inline, chat tutor-klien, dan alat skripsi (asisten nulis AI, manajer sitasi, simulasi
-sidang, streak menulis). Dibangun dengan **Next.js 16 + Prisma**, berjalan **nol-setup di SQLite**
-untuk lokal dan siap **satu-perintah Docker** untuk deploy.
+# Thesisdesk
 
-Ini juga reference implementation dari redesign **Maubisa Lulus** (dari Laravel/Filament ke
-Next.js, pola strangler). Fondasinya: design system "Ruang Belajar yang Tenang", Nielsen 10,
-WCAG 2.2 AA, keamanan enterprise, dan arsitektur hub-and-spoke (identitas/tagihan/akses di core;
-state bimbingan di DB thesis; tanpa FK lintas-DB). Integrasi khusus Maubisa (hub notifikasi/akun)
-bersifat **opsional** - kosongkan env-nya dan aplikasi tetap jalan mandiri.
+**Satu ruang untuk bimbingan skripsi, dari progres BAB sampai sidang.**
 
-## Self-host (satu perintah, Docker)
+Platform bimbingan skripsi yang siap dipakai kampus, instansi, atau tim bimbingan mandiri: progres
+BAB, penjadwalan sesi plus Google Meet, dokumen berversi dengan anotasi inline, chat tutor-klien,
+dan alat skripsi berbasis AI. Kode ini kami pakai sungguhan di `thesis.maubisa.id`, lalu kami buka
+agar Anda tidak perlu mulai dari nol.
 
-```bash
-cp .env.example .env      # isi BETTER_AUTH_SECRET (string acak panjang)
-docker compose up         # app di http://localhost:3100 + MySQL 8.4, migrasi + generate otomatis
+<p>
+  <a href="https://thesis.maubisa.id"><img alt="Demo langsung" src="https://img.shields.io/badge/Demo%20langsung-thesis.maubisa.id-0a48b7?logo=vercel&logoColor=white"></a>
+  <a href="https://github.com/maubisa-id/thesisdesk/generate"><img alt="Gunakan template ini" src="https://img.shields.io/badge/Gunakan%20template%20ini-2ea44f?logo=github&logoColor=white"></a>
+</p>
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/maubisa-id/thesisdesk)
+
+<p>
+  <a href="https://github.com/maubisa-id/thesisdesk/actions/workflows/ci.yml"><img alt="Status CI" src="https://github.com/maubisa-id/thesisdesk/actions/workflows/ci.yml/badge.svg"></a>
+  <a href="https://github.com/maubisa-id/thesisdesk/releases/latest"><img alt="Rilis terbaru" src="https://img.shields.io/github/v/release/maubisa-id/thesisdesk?color=3FB950&label=rilis"></a>
+  <a href="./LICENSE"><img alt="Lisensi" src="https://img.shields.io/github/license/maubisa-id/thesisdesk?color=3FB950"></a>
+  <a href="https://github.com/maubisa-id/thesisdesk/commits/main"><img alt="Commit terakhir" src="https://img.shields.io/github/last-commit/maubisa-id/thesisdesk"></a>
+</p>
+
+<p>
+  <a href="https://nextjs.org/"><img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white"></a>
+  <a href="https://react.dev/"><img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white"></a>
+  <a href="https://www.typescriptlang.org/"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white"></a>
+  <a href="https://tailwindcss.com/"><img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss&logoColor=white"></a>
+  <a href="https://www.prisma.io/"><img alt="Prisma" src="https://img.shields.io/badge/Prisma-6-2D3748?logo=prisma&logoColor=white"></a>
+  <a href="https://www.better-auth.com/"><img alt="Better Auth" src="https://img.shields.io/badge/Better%20Auth-1.6-000000"></a>
+</p>
+
+<br/>
+
+<img src="./.github/assets/og.png" alt="Thesisdesk" width="840">
+
+</div>
+
+---
+
+> [!TIP]
+> **Coba dulu sebelum dipakai: [thesis.maubisa.id](https://thesis.maubisa.id).**
+> Masuk sebagai klien `rina@student.ac.id`, tutor `andi.tutor@maubisa.id`, atau admin
+> `admin@maubisa.id` (sandi `password123` untuk semuanya). Semua fitur AI berjalan dalam mode
+> aman: kalau kunci AI tidak diisi, keluarannya memakai stub deterministik, jadi alurnya tetap utuh
+> tanpa biaya.
+
+## Untuk siapa ini
+
+Pakai Thesisdesk kalau Anda butuh salah satu dari berikut:
+
+- Sistem bimbingan skripsi/tesis untuk kampus, program studi, atau lembaga bimbingan.
+- Ruang kerja tutor-mahasiswa: progres bab, jadwal sesi, dokumen, dan diskusi dalam satu tempat.
+- Fondasi yang aman dan rapi untuk dikembangkan sendiri, bukan mulai dari halaman kosong.
+
+Bagian yang paling melelahkan, yaitu peran-akses yang benar (mahasiswa hanya melihat miliknya),
+jejak audit, penjadwalan Google Meet, dan versi dokumen, sudah kami tangani. Anda tinggal ganti
+merek, sesuaikan alur, dan jalankan.
+
+## Kenapa ada
+
+Membangun sistem bimbingan yang utuh itu makan waktu: dashboard per peran, papan progres, jadwal
+plus tautan rapat, dokumen berversi dengan anotasi, pesan, sampai keamanan akses antar-mahasiswa.
+Semua itu sudah jadi di sini, siap Anda pakai ulang. Fokusnya satu: **membantu mahasiswa lulus
+lebih cepat, dengan tutor yang punya gambaran jelas.**
+
+> [!NOTE]
+> Alat AI di sini dirancang sebagai **perancah (scaffolding), bukan joki**. AI membantu mahasiswa
+> berpikir dan menyusun, disertai disclaimer, dan tidak pernah diklaim sebagai tulisan final
+> siap-kumpul. Tanpa kunci AI pun aplikasi tetap jalan (memakai keluaran stub).
+
+## Fitur
+
+- **Dashboard per peran.** Mahasiswa (cincin progres BAB, jadwal, tugas), tutor (antrean review,
+  klien yang macet 7 hari lebih, jadwal), admin (metrik plus jejak audit).
+- **Progres BAB.** Papan Kanban milestone per bab (proposal, BAB 1-5, revisi, sidang) yang bisa
+  dioperasikan penuh lewat keyboard.
+- **Jadwal dan sesi.** Mahasiswa mengajukan, tutor menyetujui, tautan **Google Meet** dibuat
+  otomatis, plus catatan sesi dan rekaman.
+- **Dokumen berversi.** Unggah naskah, simpan versi, beri **anotasi inline** dan diskusi ber-thread
+  langsung di dokumen.
+- **Pesan.** Chat tutor-mahasiswa dengan indikator kehadiran.
+- **Alat skripsi.** Asisten Nulis (perancah AI plus disclaimer), Manajer Sitasi (DOI/Crossref ke
+  APA/IEEE), Simulasi Sidang (bank soal plus mode latihan), dan Streak Menulis (heatmap konsistensi).
+- **Notifikasi.** Pemberitahuan dalam aplikasi (jadwal disetujui, berkas baru, pesan) dengan penanda
+  belum-dibaca; email bersifat opsional lewat hub.
+- **Keamanan.** Akses default-deny berbasis hak (scope thesis), RBAC terpusat yang mencegah
+  mahasiswa mengintip data mahasiswa lain, jejak audit append-only, validasi zod, header keamanan,
+  rate-limit, dan pengecekan tipe berkas dari magic-byte.
+- **Federasi admin (opsional).** API tipis `/admin/v1/*` (JWT HS256 server-to-server, mati secara
+  default) agar sebuah pusat operator bisa menugaskan tutor, mengatur judul, dan memantau beban
+  tutor tanpa login ulang. Lihat [docs/federation-admin-api.md](./docs/federation-admin-api.md).
+
+## Cara kerjanya
+
+```
+Mahasiswa  --ajukan sesi-->  Tutor  --review + anotasi-->  Dokumen berversi
+    |                          |
+    +------- Progres BAB ------+       (milestone per bab, papan Kanban)
+    |
+    +------- Chat + Notifikasi
+
+Identitas / tagihan / hak akses  --(opsional, lewat env)-->  Hub  akun.maubisa.id
+Aksi operator lintas-produk       --(opsional, /admin/v1 JWT)-->  Federasi admin
 ```
 
-Untuk fork/kontribusi lihat [CONTRIBUTING.md](CONTRIBUTING.md), laporan keamanan di
-[SECURITY.md](SECURITY.md). Lisensi: **[AGPL-3.0](LICENSE)** (lihat catatan lisensi di bawah).
+Aturan intinya: **state bimbingan hidup di aplikasi ini**, sedangkan identitas, tagihan, dan hak
+akses bisa ditumpangkan ke sebuah hub (pola hub-and-spoke, tanpa foreign key lintas-DB). Integrasi
+hub itu **opsional**: kosongkan env-nya dan Thesisdesk tetap berjalan mandiri, notifikasi tetap
+tampil di dalam aplikasi.
 
-## Stack
+## Tech stack
 
-| Lapisan | Pilihan |
-|---|---|
-| Framework | Next.js 16 (App Router) + TypeScript + React 19 |
-| UI | **shadcn/ui** (Base UI + Lucide, standar industri) + Tailwind v4 · aksen **cobalt** #0a48b7 · Geist (UI) + Cabinet Grotesk (display) |
-| Auth/SSO | Better Auth (email+password lokal; cookie `.maubisa.id` SSO-ready) |
-| ORM/DB | Prisma 6 - **SQLite (lokal)**, MySQL `db-thesis-maubisa` (produksi) |
-| Validasi | zod (boundary Server Action) |
+| Bagian | Teknologi |
+|--------|-----------|
+| Framework | [Next.js 16](https://nextjs.org/) (App Router, Server Components, Turbopack) |
+| UI | [React 19](https://react.dev/) + [Tailwind CSS v4](https://tailwindcss.com/) + shadcn / Base UI |
+| Bahasa | [TypeScript](https://www.typescriptlang.org/) (strict) |
+| ORM | [Prisma 6](https://www.prisma.io/) (SQLite untuk dev, MySQL untuk produksi) |
+| Auth | [Better Auth 1.6](https://www.better-auth.com/) (email + password, cookie SSO-ready) |
+| AI teks | [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) (opsional, ada fallback stub) |
+| Penyimpanan dokumen | [Google Cloud Storage](https://cloud.google.com/storage) (opsional; default lokal saat dev) |
+| Desain | Sistem "Ruang Belajar yang Tenang" (cream + cobalt, Cabinet Grotesk + Geist, WCAG 2.2 AA) |
 
-## Jalankan lokal (nol setup - SQLite)
+## Mulai cepat
+
+Pilih salah satu cara memakai kode ini:
+
+- **Tombol "Use this template"** (paling gampang): bikin repo baru milik Anda dengan riwayat bersih,
+  [buka di sini](https://github.com/maubisa-id/thesisdesk/generate).
+- **Salin langsung jadi folder baru** (tanpa membawa riwayat git):
+  ```bash
+  npx degit maubisa-id/thesisdesk nama-proyek-anda
+  cd nama-proyek-anda
+  ```
+- **Fork lewat tombol di GitHub** kalau ingin tetap terhubung ke sumbernya, supaya gampang menarik
+  pembaruan nanti.
+
+Lalu jalankan (nol-setup, pakai SQLite):
 
 ```bash
 npm install
-npm run db:setup     # generate Prisma client + buat SQLite (prisma/dev.db)
-npm run seed         # isi data contoh (akun + bimbingan + milestone + dst.)
-npm run dev          # http://localhost:3100
+cp .env.example .env          # minimal isi BETTER_AUTH_SECRET (openssl rand -base64 32)
+npm run db:setup              # generate Prisma client + buat dev.db dari schema
+npm run seed                  # data contoh + akun demo
+npm run dev                   # http://localhost:3100
 ```
 
-### Akun demo (kata sandi: `password123`)
+Atau sekali jalan dengan Docker (app + MySQL):
 
-| Peran | Email |
-|---|---|
-| Admin | `admin@maubisa.id` |
-| Tutor | `andi.tutor@maubisa.id` · `sinta.tutor@maubisa.id` |
-| Klien | `rina@student.ac.id` · `dinda@student.ac.id` · `bagus@student.ac.id` |
+```bash
+cp .env.example .env          # isi BETTER_AUTH_SECRET
+docker compose up             # http://localhost:3100, migrasi + generate otomatis
+```
 
-## Fitur (blueprint IA)
+**Akun demo (sandi `password123`):** admin `admin@maubisa.id`, tutor `andi.tutor@maubisa.id` atau
+`sinta.tutor@maubisa.id`, mahasiswa `rina@student.ac.id`, `dinda@student.ac.id`,
+`bagus@student.ac.id`. Butuh Node 22 (lihat [`.nvmrc`](./.nvmrc)).
 
-- **Dashboard per peran** - Klien (progress ring BAB, jadwal, pesan, tugas AI), Tutor (antrian
-  review, klien *stuck* ≥7 hari, jadwal), Admin (metrik + jejak audit).
-- **Bimbingan** - Progres BAB (Kanban, keyboard-accessible), Jadwal & Sesi (ajukan/approve +
-  GMeet), Dokumen (unggah + versi + **anotasi inline** + thread), Pesan (chat tutor↔klien).
-- **Alat Skripsi (USP)** - Asisten Nulis AI (**scaffolding, bukan ghostwriter** + disclaimer),
-  Manajer Sitasi (DOI/Crossref → APA/IEEE), Simulasi Sidang (bank soal + mode latihan), Streak
-  Menulis (heatmap konsistensi).
+## Environment
 
-## Keamanan (Definition of Secure - Fondasi §5.4)
+Semua variabel dijelaskan di [`.env.example`](./.env.example). Yang paling penting:
 
-- **Default-deny** akses via `entitlements` (`scope='thesis'`), dihitung lazy saat dibaca.
-- **RBAC/Policy terpusat** (`src/lib/rbac.ts`) - cegah IDOR antar-klien di tiap query.
-- **Audit log** aksi/akses sensitif (`src/lib/audit.ts`) - append-only, tanpa PII mentah.
-- **Validasi zod** di boundary Server Action + **output AI di-encode** (tanpa `dangerouslySetInnerHTML`).
-- Header keamanan (`next.config.ts`), rate-limit auth (Better Auth), noindex.
+| Variabel | Wajib | Keterangan |
+|----------|:-----:|------------|
+| `DATABASE_URL` + `DB_PROVIDER` | ya | `file:./dev.db` (dev) atau `mysql://` (produksi) |
+| `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` | ya | rahasia acak plus origin app |
+| `ADMIN_EMAILS` | untuk admin | daftar email admin (dipisah koma) |
+| `THESIS_ADMIN_API_SECRET` | untuk federasi | mengaktifkan API `/admin/v1/*`; samakan dengan hub |
+| `NOTIFY_URL` / `NOTIFY_SECRET` | untuk email | kirim notifikasi lewat hub; kosong = tetap in-app |
+| `CF_ACCOUNT_ID` / `CF_AI_TOKEN` | untuk AI | Cloudflare Workers AI; kosong = fallback stub |
+| `GCS_*` | untuk dokumen | Google Cloud Storage; kosong = simpan lokal saat dev |
 
-## Migrasi ke MySQL (produksi)
+> [!IMPORTANT]
+> Semua integrasi khusus Maubisa (hub notifikasi, akun, federasi) bersifat **opsional dan mati
+> secara default**. Kosongkan env-nya dan aplikasi tetap berjalan penuh secara mandiri.
 
-Samakan tiga hal (guard `src/lib/db-config.ts` melempar error bila tak konsisten):
-1. `prisma/schema.prisma` → `datasource.provider = "mysql"` (atau `npm run db:provider` via `DB_PROVIDER`)
-2. `.env` → `DB_PROVIDER="mysql"`
-3. `.env` → `DATABASE_URL="mysql://…/db-thesis-maubisa"`
+## Deploy
 
-Lalu `npm run db:setup`. Better Auth ikut ke MySQL yang sama; set `BETTER_AUTH_URL=https://thesis.maubisa.id`
-untuk cookie SSO `.maubisa.id`. **Catatan:** di produksi, DB thesis dikelola migration terpisah - 
-mirror `entitlements` di sini hanya untuk demo lokal; sumber kebenaran akses tetap `maubisa_core`.
+- **Vercel.** Klik tombol **Deploy with Vercel** di atas, sambungkan repo, lalu isi environment dari
+  `.env.example`. `vercel.json` sudah menjalankan `prisma generate && prisma db push && next build`.
+  Gunakan database terkelola (Neon, PlanetScale, Railway, atau sejenisnya) untuk `DATABASE_URL` dan
+  set `DB_PROVIDER=mysql`, lalu set `BETTER_AUTH_URL` ke domain final dan deploy ulang.
+- **Docker.** `docker compose up` menjalankan app plus MySQL sekali perintah. `Dockerfile` (multi-
+  stage, standalone, non-root) tersedia di root.
 
-## Struktur
+## Buat jadi milik Anda
+
+Repo ini membawa identitas Maubisa sebagai asal template. Untuk menjadikannya milik sendiri:
+
+1. **Ganti merek.** Logo di [`public/`](./public) dan [`.github/assets/`](./.github/assets), favicon
+   di [`src/app/icon.png`](./src/app), serta warna dan token di
+   [`src/app/globals.css`](./src/app/globals.css).
+2. **Sesuaikan data contoh.** Akun dan bimbingan demo ada di [`prisma/seed.ts`](./prisma/seed.ts).
+3. **Matikan/hidupkan integrasi.** Semua integrasi hub bersifat env. Biarkan kosong untuk berdiri
+   sendiri, atau isi untuk menyambung ke pusat akun dan federasi admin Anda.
+4. **Deploy.** Cara tercepat: tombol **Deploy with Vercel**, bawa database terkelola sendiri. Untuk
+   MySQL manual atau Docker, ikuti bagian Deploy di atas.
+
+Panduan kontribusi dan standar kode ada di [CONTRIBUTING.md](./CONTRIBUTING.md).
+
+## Struktur proyek
 
 ```
 src/
-├── app/
-│   ├── (app)/            # rute di balik login (shell + nav per peran)
-│   │   ├── progres, jadwal, dokumen, chat
-│   │   ├── alat/{asisten,sitasi,sidang,streak}
-│   │   ├── klien         # tutor: klien saya
-│   │   └── admin/{pengguna,bimbingan,audit}
-│   ├── masuk, daftar     # auth
-│   └── api/auth/[...all] # Better Auth handler
-├── components/{ui,shell,icons,states,dashboard,features,auth}
-└── lib/{prisma,auth,session,entitlement,rbac,audit,actions,queries,citation,ai-scaffold,format,nav}
+  app/
+    (app)/            # area login (shell + nav per peran)
+      progres, jadwal, dokumen, chat, notifikasi
+      alat/{asisten,sitasi,sidang,streak}   # alat skripsi
+      klien           # tutor: klien saya
+      admin/{pengguna,bimbingan,audit}       # panel admin
+    admin/v1/         # API federasi (JWT S2S, env-gated)
+    masuk, daftar     # auth
+    api/{auth,cron,portal}
+  components/{ui,shell,dashboard,features,auth,states,icons}
+  lib/{prisma,auth,session,entitlement,rbac,audit,federation,actions,queries,
+       citation,ai-*,notify,gcs,format,nav}
+prisma/               # schema.prisma, seed.ts
 ```
 
-## Lisensi & open-core
+## Skrip
 
-Dilisensikan di bawah **GNU AGPL-3.0** (lihat [LICENSE](LICENSE)). Artinya bebas dipakai,
-dipelajari, dimodifikasi, dan di-deploy - termasuk oleh kampus/instansi - selama modifikasi yang
-dilayankan ke publik lewat jaringan ikut membuka source-nya. Ini melindungi kontribusi komunitas
-dari fork tertutup, sekaligus tetap ramah adopsi non-komersial dan institusional.
+| Skrip | Fungsi |
+|-------|--------|
+| `npm run dev` | server pengembangan (port 3100) |
+| `npm run build` / `npm start` | build dan jalankan produksi |
+| `npm run lint` | ESLint |
+| `npm run db:setup` | generate Prisma client + buat/sinkron DB |
+| `npm run seed` | isi data contoh dan akun demo |
 
-Model **open-core**: repositori ini adalah fondasi thesis management system yang lengkap dan
-berdiri sendiri. Fitur diferensiasi komersial khusus Maubisa (mis. integrasi hub akun/tagihan,
-pipeline AI berbayar, federasi admin lintas-produk) berada di luar repositori ini; titik
-integrasinya sudah di-abstraksi lewat env opsional sehingga fork tetap berjalan penuh tanpa itu.
+## Keamanan
 
-> Catatan lisensi: AGPL-3.0 adalah rekomendasi default untuk melindungi karya sambil memaksimalkan
-> adopsi. Bila kebutuhanmu berbeda (mis. ingin adopsi korporat lebih longgar -> Apache-2.0/MIT,
-> atau dual-license komersial), ganti berkas `LICENSE` sebelum rilis publik. Keputusan lisensi
-> final ada di pemilik hak cipta.
+Akses bersifat default-deny: fitur bimbingan hanya terbuka untuk pengguna dengan hak aktif, dan
+setiap query difilter per pengguna sehingga mahasiswa tidak bisa mengintip data mahasiswa lain.
+Aksi sensitif tercatat di jejak audit append-only. Endpoint federasi memverifikasi tanda tangan JWT
+secara timing-safe, menolak `alg=none`, dan mengecek ulang invariant-nya sendiri. Detail dan cara
+melapor ada di [SECURITY.md](./SECURITY.md).
+
+## Dokumentasi
+
+| Dokumen | Isi |
+|---------|-----|
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Cara berkontribusi dan standar kode |
+| [SECURITY.md](./SECURITY.md) | Kebijakan keamanan dan checklist produksi |
+| [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Pedoman perilaku komunitas |
+| [docs/federation-admin-api.md](./docs/federation-admin-api.md) | Kontrak API federasi admin |
+| [.env.example](./.env.example) | Semua variabel environment |
+
+## Kredit dan atribusi
+
+Template ini berasal dari [`maubisa-id/thesisdesk`](https://github.com/maubisa-id/thesisdesk) oleh
+Maubisa / PT Litera Edu Solusi, dan menggerakkan [thesis.maubisa.id](https://thesis.maubisa.id).
+Kalau Anda memakai atau memodifikasinya, kami akan senang bila atribusi dan tautan asalnya tetap
+dicantumkan agar pengguna lain bisa menemukan sumbernya.
+
+## Lisensi
+
+[AGPL-3.0](./LICENSE), hak cipta 2026 PT Litera Edu Solusi (Maubisa). Bebas dipakai, dipelajari,
+dimodifikasi, dan di-deploy, termasuk oleh kampus dan instansi. Karena AGPL, bila Anda menjalankan
+versi modifikasi sebagai layanan jaringan untuk publik, source modifikasi itu ikut dibuka bagi
+penggunanya. Logo dan nama "Maubisa" tetap milik PT Litera Edu Solusi; ganti dengan merek Anda
+sendiri saat memakai.
+
+---
+
+<div align="center">
+<sub>Dibuat oleh <a href="https://maubisa.id">Maubisa</a>. Menggerakkan <a href="https://thesis.maubisa.id">thesis.maubisa.id</a>.</sub>
+</div>
