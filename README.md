@@ -238,6 +238,7 @@ melapor ada di [SECURITY.md](./SECURITY.md).
 | [SECURITY.md](./SECURITY.md) | Kebijakan keamanan dan checklist produksi |
 | [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md) | Pedoman perilaku komunitas |
 | [docs/federation-admin-api.md](./docs/federation-admin-api.md) | Kontrak API federasi admin |
+| [docs/federation-admin-api.openapi.yaml](./docs/federation-admin-api.openapi.yaml) | Spesifikasi OpenAPI 3.1 (Swagger/Postman) |
 | [.env.example](./.env.example) | Semua variabel environment |
 
 ## Kredit dan atribusi

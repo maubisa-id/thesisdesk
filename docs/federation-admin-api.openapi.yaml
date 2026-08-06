@@ -1,0 +1,213 @@
+openapi: 3.1.0
+info:
+  title: Thesisdesk Federation Admin API
+  version: "1.0.0"
+  description: >
+    API tipis server-to-server yang dipanggil hub operator (mis. akun.maubisa.id) untuk
+    mengelola bimbingan tanpa login ulang. Semua endpoint di bawah `/admin/v1` dan
+    memverifikasi JWT HS256 umur-pendek (lihat securitySchemes). OFF secara default:
+    tanpa `THESIS_ADMIN_API_SECRET`, semua endpoint membalas 503. Lihat
+    docs/federation-admin-api.md untuk kontrak lengkap.
+servers:
+  - url: https://thesis.example.ac.id
+    description: Origin aplikasi thesisdesk (base URL yang didaftarkan di hub)
+security:
+  - hubJwt: []
+tags:
+  - name: read
+  - name: write
+paths:
+  /admin/v1/stats:
+    get:
+      tags: [read]
+      summary: Ringkasan untuk dashboard hub
+      responses:
+        "200":
+          description: Statistik ringkas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  bimbingan_aktif: { type: integer, example: 128 }
+                  tutor: { type: integer, example: 12 }
+                  klien_tanpa_tutor: { type: integer, example: 7 }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+        "503": { $ref: "#/components/responses/Disabled" }
+  /admin/v1/tutors:
+    get:
+      tags: [read]
+      summary: Daftar tutor (untuk picker assign)
+      responses:
+        "200":
+          description: Array tutor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/v1/bimbingan:
+    get:
+      tags: [read]
+      summary: Daftar bimbingan (default yang belum ber-tutor)
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string, enum: [unassigned] }
+          description: Kosong atau `unassigned` = bimbingan aktif tanpa tutor.
+      responses:
+        "200":
+          description: Array bimbingan
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    klien_name: { type: string }
+                    judul: { type: string }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/v1/bimbingan/{id}/assign-tutor:
+    post:
+      tags: [write]
+      summary: Tugaskan tutor ke bimbingan (idempoten)
+      parameters:
+        - $ref: "#/components/parameters/BimbinganId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tutor_user_id]
+              properties:
+                tutor_user_id: { type: string, example: "42" }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422":
+          description: Tutor tidak valid atau klien tanpa entitlement aktif
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/v1/bimbingan/{id}/title:
+    post:
+      tags: [write]
+      summary: Set judul skripsi (idempoten, maks 300 char)
+      parameters:
+        - $ref: "#/components/parameters/BimbinganId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [thesis_title]
+              properties:
+                thesis_title: { type: string, maxLength: 300 }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "422":
+          description: Judul kosong atau melebihi batas
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/v1/tutor-workload:
+    get:
+      tags: [read]
+      summary: Beban tutor (klien aktif, rata-rata progres, aktivitas terakhir)
+      responses:
+        "200":
+          description: Array beban tutor
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+                    active_clients: { type: integer }
+                    avg_progress: { type: integer, description: "persen 0-100" }
+                    last_activity: { type: [string, "null"], format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/v1/klien:
+    get:
+      tags: [read]
+      summary: Daftar klien bimbingan (read-only)
+      responses:
+        "200":
+          description: Array klien
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: integer }
+                    name: { type: string }
+                    email: { type: string }
+                    tutor_name: { type: [string, "null"] }
+                    status: { type: string }
+                    judul: { type: string }
+                    progress_pct: { type: integer }
+                    last_activity: { type: string, format: date-time }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+components:
+  securitySchemes:
+    hubJwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        JWT HS256 umur-pendek (60 dtk) dari hub. Klaim wajib: iss=akun.maubisa.id,
+        aud=thesis, scope=thesis, actor{uuid,email}, jti, iat, exp. Header tambahan
+        x-correlation-id untuk tracing. Spoke menolak alg=none dan me-replay jti pada POST.
+  parameters:
+    BimbinganId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
+  responses:
+    Ok:
+      description: Sukses
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: { type: boolean, example: true }
+    Unauthorized:
+      description: Token hilang/tidak valid/kedaluwarsa
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    NotFound:
+      description: Bimbingan tidak ditemukan
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+    Disabled:
+      description: Federasi belum aktif (THESIS_ADMIN_API_SECRET kosong)
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+  schemas:
+    Error:
+      type: object
+      properties:
+        ok: { type: boolean, example: false }
+        error: { type: string }

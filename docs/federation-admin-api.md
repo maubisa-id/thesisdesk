@@ -6,6 +6,9 @@
 >
 > **Kontrak kanonik hub:** `maubisa-account-center/docs/federasi-admin.md`. Dokumen ini = sisi spoke,
 > siap-implementasi.
+>
+> **Spesifikasi mesin (OpenAPI 3.1):** [`federation-admin-api.openapi.yaml`](./federation-admin-api.openapi.yaml)
+> untuk 7 endpoint + skema respons (impor ke Swagger/Postman/klien-gen).
 
 ---
 
