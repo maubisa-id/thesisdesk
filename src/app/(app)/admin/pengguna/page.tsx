@@ -2,6 +2,7 @@ import { getSessionUser } from "@/lib/session";
 import { prisma } from "@/lib/prisma";
 import { SectionTitle, Badge, Avatar, Card } from "@/components/kit";
 import { DbError } from "@/components/states";
+import { UserImport } from "@/components/features/user-import";
 import { tanggal } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -25,7 +26,12 @@ export default async function AdminPenggunaPage() {
 
   return (
     <div className="space-y-8">
-      <SectionTitle eyebrow="Kelola" title="Pengguna" desc={`${users.length} pengguna terdaftar di produk thesis.`} />
+      <SectionTitle
+        eyebrow="Kelola"
+        title="Pengguna"
+        desc={`${users.length} pengguna terdaftar di produk thesis.`}
+        action={<UserImport />}
+      />
 
       <Card className="overflow-hidden">
         {/* Tabel di md+, kartu bertumpuk di mobile (aksi tak tersembunyi di scroll horizontal) */}
