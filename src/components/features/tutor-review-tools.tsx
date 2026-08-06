@@ -3,14 +3,12 @@
 import { useLayoutEffect, useRef, useState, useTransition, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { Sparkles, MessageSquarePlus, Plus, X, Loader2, Trash2 } from "lucide-react";
+import { MessageSquarePlus, Plus, X, Loader2, Trash2 } from "lucide-react";
 import {
   createFeedbackTemplate,
   deleteFeedbackTemplate,
   bumpFeedbackTemplate,
-  runTutorReviewAssist,
   type FeedbackTemplateItem,
-  type ReviewAssistData,
 } from "@/lib/actions";
 
 const CATS = ["metodologi", "sitasi", "struktur", "bahasa", "data", "umum"] as const;
@@ -83,20 +81,17 @@ function PopoverPanel({
   );
 }
 
-// Penunjang tutor: sisip template feedback + AI pra-baca draft (human-in-the-loop) ke komposer anotasi.
+// Penunjang tutor: sisip template feedback ke komposer anotasi.
 export function TutorReviewToolbar({
-  moduleId,
   templates,
   onInsert,
 }: {
-  moduleId: number;
   templates: FeedbackTemplateItem[];
   onInsert: (text: string) => void;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       <TemplateMenu templates={templates} onInsert={onInsert} />
-      <ReviewAssistButton moduleId={moduleId} onInsert={onInsert} />
     </div>
   );
 }
@@ -209,77 +204,6 @@ function TemplateMenu({
             ))
           )}
         </ul>
-      </PopoverPanel>
-    </>
-  );
-}
-
-function ReviewAssistButton({ moduleId, onInsert }: { moduleId: number; onInsert: (text: string) => void }) {
-  const btnRef = useRef<HTMLButtonElement | null>(null);
-  const [data, setData] = useState<ReviewAssistData | null>(null);
-  const [meta, setMeta] = useState<{ aiUsed: boolean; grounded: boolean }>({ aiUsed: false, grounded: false });
-  const [open, setOpen] = useState(false);
-  const [pending, start] = useTransition();
-
-  function run() {
-    start(async () => {
-      const res = await runTutorReviewAssist({ moduleId });
-      if (res.ok && res.data) {
-        setData(res.data);
-        setMeta({ aiUsed: Boolean(res.aiUsed), grounded: Boolean(res.grounded) });
-        setOpen(true);
-      } else if (!res.ok) {
-        toast.error(res.error);
-      }
-    });
-  }
-
-  return (
-    <>
-      <button ref={btnRef} type="button" onClick={data ? () => setOpen((o) => !o) : run} disabled={pending} className={chipCls(open)}>
-        {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Sparkles className="size-3.5 text-brand-600" />} AI pra-baca
-      </button>
-      <PopoverPanel anchorRef={btnRef} open={open && data !== null} onClose={() => setOpen(false)}>
-        {data ? (
-          <>
-            <div className="flex items-center gap-1.5">
-              <Sparkles className="size-4 text-brand-600" />
-              <p className="text-sm font-semibold text-foreground">Pra-baca draft</p>
-              {meta.aiUsed ? (
-                <span className="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-medium text-brand-700" title="Dihasilkan Workers AI.">AI</span>
-              ) : (
-                <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground" title="Workers AI belum aktif; memakai pra-baca dasar deterministik.">dasar</span>
-              )}
-              {meta.grounded ? (
-                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 ring-1 ring-emerald-200" title="Berlabuh ke isi naskah klien (Vectorize).">grounded</span>
-              ) : null}
-            </div>
-            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">{data.summary}</p>
-
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">3 isu prioritas</p>
-            <ul className="mt-1 space-y-1.5">
-              {data.issues.map((s, i) => (
-                <li key={i} className="rounded-lg bg-muted/50 p-2">
-                  <p className="text-xs font-semibold text-foreground">{s.title}</p>
-                  <p className="mt-0.5 text-xs text-muted-foreground">{s.detail}</p>
-                </li>
-              ))}
-            </ul>
-
-            <p className="mt-3 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Draf komentar (klik untuk sisipkan)</p>
-            <div className="mt-1 space-y-1">
-              {data.drafts.map((d, i) => (
-                <button key={i} type="button" onClick={() => { onInsert(d); setOpen(false); }} className="w-full rounded-lg border border-dashed border-border px-2.5 py-1.5 text-left text-xs text-foreground transition-colors hover:border-brand-300 hover:bg-brand-50">
-                  {d}
-                </button>
-              ))}
-            </div>
-
-            <p className="mt-3 rounded-lg bg-amber-50 px-2.5 py-1.5 text-[11px] leading-relaxed text-amber-800 ring-1 ring-amber-600/15">
-              Bantuan pra-baca. Tinjau dokumen sendiri dan sunting draf sebelum mengirim ke klien.
-            </p>
-          </>
-        ) : null}
       </PopoverPanel>
     </>
   );

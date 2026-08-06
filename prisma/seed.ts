@@ -1,6 +1,6 @@
 /* Seed thesis-next (SQLite lokal). Membuat akun Better Auth (email+password) + data domain
  * realistis: admin, 2 tutor, 3 klien dengan bimbingan, milestone, jadwal, dokumen+anotasi,
- * chat, sitasi, simulasi sidang, streak, tugas AI, reminder, entitlement, dan jejak audit.
+ * chat, reminder, entitlement, template feedback, dan jejak audit.
  *
  * Jalankan: npm run seed   (butuh DB sudah di-push: npm run db:setup)
  * Login demo (semua kata sandi: "password123"):
@@ -9,8 +9,6 @@
  */
 import { PrismaClient } from "@prisma/client";
 import { auth } from "../src/lib/auth";
-import { runScaffold } from "../src/lib/ai-scaffold";
-import { formatApa, formatIeee, type CitationFields } from "../src/lib/citation";
 
 const prisma = new PrismaClient();
 const PASSWORD = "password123";
@@ -26,12 +24,8 @@ const at = (base: Date, h: number, m = 0) => {
 
 async function wipe() {
   // Urutan aman (anak dulu). SQLite FK cascade juga aktif, tapi eksplisit lebih jelas.
-  await prisma.aiOutput.deleteMany();
-  await prisma.aiJob.deleteMany();
   await prisma.feedbackTemplate.deleteMany();
   await prisma.notification.deleteMany();
-  await prisma.defenseQuestion.deleteMany();
-  await prisma.writingStat.deleteMany();
   await prisma.reminder.deleteMany();
   await prisma.documentAnnotation.deleteMany();
   await prisma.bimbinganLog.deleteMany();
@@ -241,56 +235,6 @@ async function main() {
     },
   });
 
-  console.log("• Membuat pustaka sitasi…");
-  const cites: CitationFields[] = [
-    { type: "article", title: "Gamification in education: A systematic mapping study", authors: [{ family: "Dicheva", given: "Darina" }, { family: "Dichev", given: "Christo" }], year: 2015, container: "Educational Technology & Society", volume: "18", issue: "3", pages: "75-88", doi: "10.2307/jeductechsoci.18.3.75" },
-    { type: "article", title: "Does gamification work? A literature review of empirical studies", authors: [{ family: "Hamari", given: "Juho" }, { family: "Koivisto", given: "Jonna" }, { family: "Sarsa", given: "Harri" }], year: 2014, container: "HICSS", pages: "3025-3034" },
-    { type: "book", title: "Motivation and Personality", authors: [{ family: "Maslow", given: "Abraham" }], year: 1954, publisher: "Harper & Row" },
-  ];
-  for (const c of cites) {
-    await prisma.citation.create({
-      data: {
-        ownerId: rina.id, coreUserId: 2001, bimbinganId: bimRina.id, type: c.type ?? "article",
-        title: c.title, authors: JSON.stringify(c.authors ?? []), year: c.year ?? null, doi: c.doi ?? null,
-        source: c.doi ? "doi" : "manual", cslJson: JSON.stringify(c),
-        formattedApa: formatApa(c), formattedIeee: formatIeee(c),
-      },
-    });
-  }
-
-  console.log("• Membuat simulasi sidang…");
-  const dq = runScaffold("defense_questions", bimRina.thesisTitle ?? "").data as {
-    question: string; category: string; difficulty: string;
-  }[];
-  for (const q of dq.slice(0, 8)) {
-    await prisma.defenseQuestion.create({
-      data: { bimbinganId: bimRina.id, ownerId: rina.id, coreUserId: 2001, question: q.question, category: q.category, difficulty: q.difficulty, source: "ai" },
-    });
-  }
-
-  console.log("• Membuat streak menulis…");
-  for (let i = 0; i < 6; i++) {
-    await prisma.writingStat.create({
-      data: { ownerId: rina.id, coreUserId: 2001, bimbinganId: bimRina.id, statDate: daysAgo(i), words: 300 + Math.floor(Math.random() * 600), minutes: 40 + Math.floor(Math.random() * 60) },
-    });
-  }
-  for (let i = 0; i < 3; i++) {
-    await prisma.writingStat.create({
-      data: { ownerId: dinda.id, coreUserId: 2002, bimbinganId: bimDinda.id, statDate: daysAgo(i), words: 200 + Math.floor(Math.random() * 400), minutes: 30 + Math.floor(Math.random() * 40) },
-    });
-  }
-
-  console.log("• Membuat tugas AI contoh…");
-  const outline = runScaffold("outline", bimRina.thesisTitle ?? "");
-  const job = await prisma.aiJob.create({
-    data: {
-      ownerId: rina.id, coreUserId: 2001, bimbinganId: bimRina.id, kind: "outline", status: "done",
-      input: JSON.stringify({ topic: bimRina.thesisTitle }), model: "scaffold-local", providerRegion: "local",
-      tokensIn: outline.tokensIn, tokensOut: outline.tokensOut, createdAt: daysAgo(3),
-    },
-  });
-  await prisma.aiOutput.create({ data: { aiJobId: job.id, content: outline.content, data: JSON.stringify(outline.data), rating: 1 } });
-
   console.log("• Membuat pustaka template feedback tutor…");
   await prisma.feedbackTemplate.createMany({
     data: [
@@ -331,7 +275,6 @@ async function main() {
     data: [
       { userId: rina.id, coreUserId: 2001, type: "schedule_approved", title: "Jadwal disetujui tutor", body: 'Sesi "Review analisis data BAB IV" disetujui. Link Google Meet sudah tersedia.', color: "success", actionUrl: "/jadwal", createdAt: daysAgo(2) },
       { userId: rina.id, coreUserId: 2001, type: "message_new", title: "Pesan baru dari Andi Prasetyo", body: "Sudah saya lihat, ada 2 anotasi di dokumen.", color: "info", actionUrl: "/chat", readAt: daysAgo(3), createdAt: daysAgo(4) },
-      { userId: rina.id, coreUserId: 2001, type: "defense", title: "Bank pertanyaan sidang siap", body: "8 pertanyaan penguji dibuat dari topikmu. Coba mode latihan!", color: "info", actionUrl: "/alat/sidang", createdAt: daysAgo(3) },
       { userId: andi.id, coreUserId: 1002, type: "doc_new", title: "Berkas baru masuk 📁", body: "Rina Kusuma mengirim berkas: Draft BAB IV - Hasil & Pembahasan", color: "success", actionUrl: "/dokumen", createdAt: daysAgo(5) },
       { userId: andi.id, coreUserId: 1002, type: "schedule_request", title: "Pengajuan bimbingan baru", body: "Bagus Santoso mengajukan sesi: Perbaikan latar belakang", color: "info", actionUrl: "/jadwal", createdAt: daysAgo(2) },
       { userId: andi.id, coreUserId: 1002, type: "message_new", title: "Pesan baru dari Rina Kusuma", body: "Baik Pak, saya perbaiki. Untuk sesi berikutnya bisa hari Rabu?", color: "info", actionUrl: "/chat", createdAt: daysAgo(1) },

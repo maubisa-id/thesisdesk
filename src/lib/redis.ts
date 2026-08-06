@@ -1,8 +1,7 @@
 import "server-only";
 import Redis from "ioredis";
 
-// Klien Redis untuk CACHE + RATE-LIMIT (ADR-008). Antrian/penjadwalan TIDAK di sini - sudah ditangani
-// Cloudflare (Worker maubisa-scheduler + AI Gateway). Jadi Redis di Maubisa murni penyimpanan ephemeral:
+// Klien Redis untuk CACHE + RATE-LIMIT (ADR-008). Redis di Maubisa murni penyimpanan ephemeral:
 // aman di-evict, tak perlu persistence/antrian. Ini menyederhanakan konfig (lihat runbook redis-config.md).
 //
 // ENV-GATED: kalau REDIS_URL kosong -> getRedis() = null, pemanggil pakai fallback (in-memory/DB) supaya

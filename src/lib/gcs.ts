@@ -61,13 +61,13 @@ export async function signedReadUrl(key: string, ttlMs = 30 * 60_000): Promise<s
   return url;
 }
 
-// Unduh objek sebagai Buffer (untuk ingestion: toMarkdown/embup). Melempar bila objek tak ada.
+// Unduh objek sebagai Buffer. Melempar bila objek tak ada.
 export async function downloadPortalBuffer(key: string): Promise<Buffer> {
   const [buf] = await client().bucket(bucketName()).file(key).download();
   return buf;
 }
 
-// Unduh objek teks (txt/md) sebagai string. PDF/DOCX diproses terpisah (Workers AI toMarkdown).
+// Unduh objek teks (txt/md) sebagai string. PDF/DOCX diproses terpisah oleh fitur dokumen.
 export async function downloadPortalText(key: string): Promise<string | null> {
   const ext = key.split(".").pop()?.toLowerCase();
   if (ext !== "txt" && ext !== "md") return null;

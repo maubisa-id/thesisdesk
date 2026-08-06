@@ -57,14 +57,5 @@ export function navFor(role: Role): NavGroup[] {
         { href: "/chat", label: "Pesan", icon: "chat" },
       ],
     },
-    {
-      section: "Alat Skripsi",
-      items: [
-        { href: "/alat/asisten", label: "Asisten Nulis AI", icon: "sparkle" },
-        { href: "/alat/sitasi", label: "Manajer Sitasi", icon: "quote" },
-        { href: "/alat/sidang", label: "Simulasi Sidang", icon: "question" },
-        { href: "/alat/streak", label: "Streak Menulis", icon: "flame" },
-      ],
-    },
   ];
 }

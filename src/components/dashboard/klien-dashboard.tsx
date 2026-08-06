@@ -26,8 +26,6 @@ import {
   IconFlag,
   IconCalendar,
   IconChat,
-  IconFlame,
-  IconSparkle,
   IconArrow,
   IconCap,
   IconClock,
@@ -36,30 +34,16 @@ import {
 import {
   tanggalWaktu,
   sisaHari,
-  waktuRelatif,
   CHAPTER_LABEL,
   CHAPTER_SHORT,
   MILESTONE_STATUS_LABEL,
   SCHEDULE_STATUS_LABEL,
-  AI_KIND_LABEL,
   persen,
   salamWaktu,
 } from "@/lib/format";
 
 const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "https://akun.maubisa.id";
 
-function computeStreak(dates: Date[]): number {
-  if (dates.length === 0) return 0;
-  const days = new Set(dates.map((d) => new Date(d).toISOString().slice(0, 10)));
-  let streak = 0;
-  const cursor = new Date();
-  if (!days.has(cursor.toISOString().slice(0, 10))) cursor.setDate(cursor.getDate() - 1);
-  while (days.has(cursor.toISOString().slice(0, 10))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-  return streak;
-}
 
 export async function KlienDashboard({ user }: { user: SessionUser }) {
   const firstName = user.name.split(/\s+/)[0];
@@ -76,30 +60,18 @@ export async function KlienDashboard({ user }: { user: SessionUser }) {
           <EmptyState
             icon={<IconCap className="h-6 w-6" />}
             title="Ayo mulai bimbingan pertamamu"
-            desc="Bimbinganmu sudah aktif. Tim akan menautkan tutor dan menyiapkan milestone BAB I-V. Sementara itu, kamu bisa menjelajah Alat Skripsi."
-            action={<ButtonLink href="/alat/asisten">Coba Asisten Nulis</ButtonLink>}
+            desc="Bimbinganmu sudah aktif. Tim akan menautkan tutor dan menyiapkan milestone BAB I-V."
+            action={<ButtonLink href="/progres">Lihat progres</ButtonLink>}
           />
         )}
       </div>
     );
   }
 
-  const [milestones, upcoming, unread, statRows, recentAi, lastLog] = await Promise.all([
+  const [milestones, upcoming, unread, lastLog] = await Promise.all([
     getMilestones(bimbingan.id),
     getUpcomingSchedules(user, 3),
     getUnreadCount(user.id),
-    prisma.writingStat.findMany({
-      where: { ownerId: user.id },
-      orderBy: { statDate: "desc" },
-      take: 40,
-      select: { statDate: true },
-    }),
-    prisma.aiJob.findMany({
-      where: { ownerId: user.id },
-      orderBy: { id: "desc" },
-      take: 3,
-      select: { id: true, kind: true, status: true, createdAt: true },
-    }),
     prisma.bimbinganLog.findFirst({
       where: { bimbinganId: bimbingan.id, deletedAt: null },
       orderBy: { createdAt: "desc" },
@@ -108,7 +80,6 @@ export async function KlienDashboard({ user }: { user: SessionUser }) {
   ]);
 
   const progress = summarizeMilestones(milestones);
-  const streak = computeStreak(statRows.map((s) => s.statDate));
   const nextTodo = milestones.find((m) => m.status !== "done" && m.status !== "blocked");
   const nextSchedule = upcoming[0];
 
@@ -132,7 +103,7 @@ export async function KlienDashboard({ user }: { user: SessionUser }) {
 
       <QuickActions unread={unread} />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Reveal>
           <StatCard
             icon={<IconFlag className="h-5 w-5" />}
@@ -157,15 +128,6 @@ export async function KlienDashboard({ user }: { user: SessionUser }) {
             value={unread}
             hint={bimbingan.tutor ? `dari ${bimbingan.tutor.name.split(/\s+/)[0]}` : "-"}
             accent="text-teal"
-          />
-        </Reveal>
-        <Reveal delay={180}>
-          <StatCard
-            icon={<IconFlame className="h-5 w-5" />}
-            label="Streak menulis"
-            value={`${streak} hari`}
-            hint={streak > 0 ? "Pertahankan ritmenya!" : "Mulai hari ini"}
-            accent="text-lime-accent"
           />
         </Reveal>
       </div>
@@ -266,39 +228,6 @@ export async function KlienDashboard({ user }: { user: SessionUser }) {
                     Ajukan sesi pertama
                   </Link>
                   .
-                </p>
-              )}
-            </Card>
-          </Reveal>
-
-          <Reveal delay={240}>
-            <Card className="p-6">
-              <SectionHeading title="Tugas AI terbaru" action={
-                <Link href="/alat/asisten" className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-                  Alat
-                </Link>
-              } />
-              {recentAi.length > 0 ? (
-                <ul className="mt-4 space-y-2.5">
-                  {recentAi.map((j) => (
-                    <li key={j.id} className="flex items-center gap-3 text-sm">
-                      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
-                        <IconSparkle className="h-4 w-4" />
-                      </span>
-                      <span className="min-w-0 flex-1 truncate font-medium text-ink">
-                        {AI_KIND_LABEL[j.kind] ?? j.kind}
-                      </span>
-                      <span className="text-xs text-muted-foreground">{waktuRelatif(j.createdAt)}</span>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className="mt-4 text-sm text-muted-foreground">
-                  Belum ada. Coba{" "}
-                  <Link href="/alat/asisten" className="font-semibold text-brand-600">
-                    Asisten Nulis
-                  </Link>{" "}
-                  untuk menyusun kerangka BAB.
                 </p>
               )}
             </Card>
@@ -418,12 +347,11 @@ function QuickActions({ unread }: { unread: number }) {
     { href: "/jadwal", label: "Ajukan jadwal", sub: "Buat sesi bimbingan", icon: IconCalendar },
     { href: "/dokumen", label: "Unggah dokumen", sub: "Kirim draft ke tutor", icon: IconUpload },
     { href: "/chat", label: "Chat tutor", sub: "Diskusi cepat", icon: IconChat, badge: unread },
-    { href: "/alat/asisten", label: "Alat skripsi", sub: "Asisten nulis AI", icon: IconSparkle },
   ];
   return (
     <div>
       <h2 className="mb-3 font-heading text-base font-semibold tracking-tight text-foreground">Aksi cepat</h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {actions.map((a) => {
           const Icon = a.icon;
           return (

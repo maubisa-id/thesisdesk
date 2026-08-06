@@ -19,8 +19,6 @@ const ACTION_LABEL: Record<string, string> = {
   "schedule.approve": "Setujui sesi",
   "schedule.reject": "Tolak sesi",
   "schedule.selesai": "Selesaikan sesi",
-  "ai.run": "Jalankan alat AI",
-  "defense.generate": "Buat pertanyaan sidang",
   "feedback_template.create": "Buat template feedback",
   "pii.read": "Baca data pribadi",
   "role.change": "Ubah peran",

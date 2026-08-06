@@ -183,7 +183,7 @@ export function TrustPoints() {
   const points = [
     "Bimbingan terstruktur - dari judul sampai sidang",
     "Revisi rapi lewat anotasi di dokumen, bukan chat berserakan",
-    "Alat skripsi (AI) yang menemani proses, bukan mengerjakan",
+    "Alur bimbingan jelas dengan progres, jadwal, dan dokumen",
   ];
   return (
     <ul className="space-y-3">

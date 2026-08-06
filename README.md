@@ -10,9 +10,8 @@
 **Satu ruang untuk bimbingan skripsi, dari progres BAB sampai sidang.**
 
 Platform bimbingan skripsi yang siap dipakai kampus, instansi, atau tim bimbingan mandiri: progres
-BAB, penjadwalan sesi plus Google Meet, dokumen berversi dengan anotasi inline, chat tutor-klien,
-dan alat skripsi berbasis AI. Kode ini kami pakai sungguhan di `thesis.maubisa.id`, lalu kami buka
-agar Anda tidak perlu mulai dari nol.
+BAB, penjadwalan sesi plus Google Meet, dokumen berversi dengan anotasi inline, dan chat tutor-klien.
+Kode ini kami pakai sungguhan di `thesis.maubisa.id`, lalu kami buka agar Anda tidak perlu mulai dari nol.
 
 <p>
   <a href="https://thesis.maubisa.id"><img alt="Demo langsung" src="https://img.shields.io/badge/Demo%20langsung-thesis.maubisa.id-0a48b7?logo=vercel&logoColor=white"></a>
@@ -48,9 +47,7 @@ agar Anda tidak perlu mulai dari nol.
 > [!TIP]
 > **Coba dulu sebelum dipakai: [thesis.maubisa.id](https://thesis.maubisa.id).**
 > Masuk sebagai klien `rina@student.ac.id`, tutor `andi.tutor@maubisa.id`, atau admin
-> `admin@maubisa.id` (sandi `password123` untuk semuanya). Semua fitur AI berjalan dalam mode
-> aman: kalau kunci AI tidak diisi, keluarannya memakai stub deterministik, jadi alurnya tetap utuh
-> tanpa biaya.
+> `admin@maubisa.id` (sandi `password123` untuk semuanya).
 
 ## Untuk siapa ini
 
@@ -71,11 +68,6 @@ plus tautan rapat, dokumen berversi dengan anotasi, pesan, sampai keamanan akses
 Semua itu sudah jadi di sini, siap Anda pakai ulang. Fokusnya satu: **membantu mahasiswa lulus
 lebih cepat, dengan tutor yang punya gambaran jelas.**
 
-> [!NOTE]
-> Alat AI di sini dirancang sebagai **perancah (scaffolding), bukan joki**. AI membantu mahasiswa
-> berpikir dan menyusun, disertai disclaimer, dan tidak pernah diklaim sebagai tulisan final
-> siap-kumpul. Tanpa kunci AI pun aplikasi tetap jalan (memakai keluaran stub).
-
 ## Fitur
 
 - **Dashboard per peran.** Mahasiswa (cincin progres BAB, jadwal, tugas), tutor (antrean review,
@@ -87,8 +79,6 @@ lebih cepat, dengan tutor yang punya gambaran jelas.**
 - **Dokumen berversi.** Unggah naskah, simpan versi, beri **anotasi inline** dan diskusi ber-thread
   langsung di dokumen.
 - **Pesan.** Chat tutor-mahasiswa dengan indikator kehadiran.
-- **Alat skripsi.** Asisten Nulis (perancah AI plus disclaimer), Manajer Sitasi (DOI/Crossref ke
-  APA/IEEE), Simulasi Sidang (bank soal plus mode latihan), dan Streak Menulis (heatmap konsistensi).
 - **Notifikasi.** Pemberitahuan dalam aplikasi (jadwal disetujui, berkas baru, pesan) dengan penanda
   belum-dibaca; email bersifat opsional lewat hub.
 - **Keamanan.** Akses default-deny berbasis hak (scope thesis), RBAC terpusat yang mencegah
@@ -125,7 +115,6 @@ tampil di dalam aplikasi.
 | Bahasa | [TypeScript](https://www.typescriptlang.org/) (strict) |
 | ORM | [Prisma 6](https://www.prisma.io/) (SQLite untuk dev, MySQL untuk produksi) |
 | Auth | [Better Auth 1.6](https://www.better-auth.com/) (email + password, cookie SSO-ready) |
-| AI teks | [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/) (opsional, ada fallback stub) |
 | Penyimpanan dokumen | [Google Cloud Storage](https://cloud.google.com/storage) (opsional; default lokal saat dev) |
 | Desain | Sistem "Ruang Belajar yang Tenang" (cream + cobalt, Cabinet Grotesk + Geist, WCAG 2.2 AA) |
 
@@ -175,7 +164,6 @@ Semua variabel dijelaskan di [`.env.example`](./.env.example). Yang paling penti
 | `ADMIN_EMAILS` | untuk admin | daftar email admin (dipisah koma) |
 | `THESIS_ADMIN_API_SECRET` | untuk federasi | mengaktifkan API `/admin/v1/*`; samakan dengan hub |
 | `NOTIFY_URL` / `NOTIFY_SECRET` | untuk email | kirim notifikasi lewat hub; kosong = tetap in-app |
-| `CF_ACCOUNT_ID` / `CF_AI_TOKEN` | untuk AI | Cloudflare Workers AI; kosong = fallback stub |
 | `GCS_*` | untuk dokumen | Google Cloud Storage; kosong = simpan lokal saat dev |
 
 > [!IMPORTANT]
@@ -213,7 +201,6 @@ src/
   app/
     (app)/            # area login (shell + nav per peran)
       progres, jadwal, dokumen, chat, notifikasi
-      alat/{asisten,sitasi,sidang,streak}   # alat skripsi
       klien           # tutor: klien saya
       admin/{pengguna,bimbingan,audit}       # panel admin
     admin/v1/         # API federasi (JWT S2S, env-gated)
@@ -221,7 +208,7 @@ src/
     api/{auth,cron,portal}
   components/{ui,shell,dashboard,features,auth,states,icons}
   lib/{prisma,auth,session,entitlement,rbac,audit,federation,actions,queries,
-       citation,ai-*,notify,gcs,format,nav}
+       notify,gcs,format,nav}
 prisma/               # schema.prisma, seed.ts
 ```
 

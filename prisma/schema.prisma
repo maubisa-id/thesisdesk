@@ -7,9 +7,8 @@
 //  • Kontrak hub-and-spoke (ADR-001/002): identitas/tagihan/akses milik maubisa_core. Di sini
 //    `coreUserId` = penunjuk angka ke core (tanpa FK lintas-DB). `entitlements` di-mirror lokal
 //    hanya untuk demo gerbang default-deny; sumber kebenaran tetap core.
-//  • Kolom [PII/ENKRIPSI] (message.content, bimbinganLog.summary, annotation.body, aiOutput.content,
-//    defenseQuestion.suggestedAnswer) → app-level encryption saat produksi (defense-in-depth).
-//
+//  ? Kolom [PII/ENKRIPSI] (message.content, bimbinganLog.summary, annotation.body)
+//    dienkripsi di level aplikasi saat produksi (defense-in-depth).
 // MIGRASI KE MySQL: samakan (1) datasource.provider "mysql" (2) DB_PROVIDER=mysql
 // (3) DATABASE_URL mysql://. scripts/db-provider.mjs mengatur (1) saat build; guard db-config.ts
 // melempar error bila tak konsisten.
@@ -56,10 +55,6 @@ model User {
   messagesReceived  Message[]   @relation("MsgReceiver")
 
   milestones        Milestone[]
-  citations         Citation[]
-  aiJobs            AiJob[]
-  defenseQuestions  DefenseQuestion[]
-  writingStats      WritingStat[]
   reminders         Reminder[]
   entitlements      Entitlement[]
   roles             UserRole[]
@@ -149,7 +144,6 @@ model Bimbingan {
   milestones       Milestone[]
   logs             BimbinganLog[]
   annotations      DocumentAnnotation[]
-  defenseQuestions DefenseQuestion[]
 
   @@index([clientUserId, status])
   @@index([tutorUserId])
@@ -302,116 +296,10 @@ model DocumentAnnotation {
   @@map("document_annotations")
 }
 
-// Manajer sitasi (pustaka). DOI/BibTeX/OpenAlex -> CSL -> APA/IEEE.
-model Citation {
-  id            Int       @id @default(autoincrement())
-  ownerId       Int       @map("owner_id")
-  coreUserId    Int?      @map("core_user_id")
-  bimbinganId   Int?      @map("bimbingan_id")
-  type          String    @default("article") // article|book|chapter|thesis|proceedings|web|other
-  title         String
-  authors       String? // JSON: [{family, given}]
-  year          Int?
-  doi           String?
-  source        String    @default("manual") // manual|doi|openalex|crossref|semanticscholar|bibtex
-  cslJson       String?   @map("csl_json")
-  formattedApa  String?   @map("formatted_apa")
-  formattedIeee String?   @map("formatted_ieee")
-  abstract      String?
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
-  deletedAt     DateTime? @map("deleted_at")
 
-  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
-  @@index([ownerId])
-  @@index([bimbinganId])
-  @@map("citations")
-}
 
-// Antrian tugas AI (metering token) + hasilnya. AI = scaffolding. consent/region/retention (PDP).
-model AiJob {
-  id             Int       @id @default(autoincrement())
-  ownerId        Int       @map("owner_id")
-  coreUserId     Int?      @map("core_user_id")
-  bimbinganId    Int?      @map("bimbingan_id")
-  consentId      Int?      @map("consent_id")
-  kind           String // outline|eyd_check|paraphrase|abstract|similarity_assist|lit_review|defense_questions|slides|methodology
-  status         String    @default("queued") // queued | running | done | failed | cancelled
-  input          String? // JSON (REF minimal)
-  model          String?
-  providerRegion String?   @map("provider_region")
-  tokensIn       Int       @default(0) @map("tokens_in")
-  tokensOut      Int       @default(0) @map("tokens_out")
-  attempts       Int       @default(0)
-  lastError      String?   @map("last_error")
-  retentionUntil DateTime? @map("retention_until")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
-  deletedAt      DateTime? @map("deleted_at")
 
-  owner   User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  outputs AiOutput[]
-
-  @@index([ownerId, createdAt])
-  @@index([status])
-  @@map("ai_jobs")
-}
-
-model AiOutput {
-  id        Int       @id @default(autoincrement())
-  aiJobId   Int       @map("ai_job_id")
-  content   String? // [PII/ENKRIPSI] - encode sebelum render (anti-XSS)
-  data      String? // JSON hasil terstruktur
-  rating    Int? // -1 | 0 | 1
-  createdAt DateTime  @default(now()) @map("created_at")
-  deletedAt DateTime? @map("deleted_at")
-
-  job AiJob @relation(fields: [aiJobId], references: [id], onDelete: Cascade)
-
-  @@index([aiJobId])
-  @@map("ai_outputs")
-}
-
-// Bank pertanyaan simulasi sidang + draft jawaban.
-model DefenseQuestion {
-  id              Int       @id @default(autoincrement())
-  bimbinganId     Int       @map("bimbingan_id")
-  ownerId         Int       @map("owner_id")
-  coreUserId      Int?      @map("core_user_id")
-  question        String
-  suggestedAnswer String?   @map("suggested_answer") // [PII/ENKRIPSI]
-  category        String    @default("umum") // metodologi|teori|hasil|kontribusi|teknis|umum
-  difficulty      String    @default("sedang") // mudah|sedang|sulit
-  source          String    @default("ai") // ai | tutor
-  createdAt       DateTime  @default(now()) @map("created_at")
-  deletedAt       DateTime? @map("deleted_at")
-
-  bimbingan Bimbingan @relation(fields: [bimbinganId], references: [id], onDelete: Cascade)
-  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  @@index([bimbinganId])
-  @@map("defense_questions")
-}
-
-// Agregat menulis harian (streak + grafik).
-model WritingStat {
-  id          Int      @id @default(autoincrement())
-  ownerId     Int      @map("owner_id")
-  coreUserId  Int?     @map("core_user_id")
-  bimbinganId Int?     @map("bimbingan_id")
-  statDate    DateTime @map("stat_date")
-  words       Int      @default(0)
-  minutes     Int      @default(0)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
-
-  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-
-  @@unique([ownerId, statDate])
-  @@index([ownerId])
-  @@map("writing_stats")
-}
 
 // Pengingat deadline/sesi (worker: email/WA/in-app).
 model Reminder {

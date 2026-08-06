@@ -210,25 +210,6 @@ export const REVIEW_STATUS_LABEL: Record<string, string> = {
   reviewed: "Sudah direview",
 };
 
-export const AI_KIND_LABEL: Record<string, string> = {
-  outline: "Kerangka BAB",
-  eyd_check: "Perapian EYD",
-  paraphrase: "Parafrase",
-  abstract: "Abstrak",
-  defense_questions: "Simulasi sidang",
-  methodology: "Pemandu metodologi",
-  lit_review: "Ringkas literatur",
-  slides: "Draf slide",
-  similarity_assist: "Saran turunkan similarity",
-};
-
-export const AI_STATUS_LABEL: Record<string, string> = {
-  queued: "Antre",
-  running: "Diproses",
-  done: "Selesai",
-  failed: "Gagal",
-  cancelled: "Dibatalkan",
-};
 
 export function bytesHuman(n?: number | null): string {
   if (!n || n <= 0) return "-";

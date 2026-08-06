@@ -319,7 +319,6 @@ export function AnnotationPanel({
         <form onSubmit={add} className="shrink-0 space-y-2 border-t border-border bg-muted/30 p-3">
           {canReview ? (
             <TutorReviewToolbar
-              moduleId={moduleId}
               templates={templates}
               onInsert={(text) => setBody((b) => (b.trim() ? `${b.trim()} ${text}` : text))}
             />
