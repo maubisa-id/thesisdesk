@@ -24,6 +24,7 @@ const at = (base: Date, h: number, m = 0) => {
 
 async function wipe() {
   // Urutan aman (anak dulu). SQLite FK cascade juga aktif, tapi eksplisit lebih jelas.
+  await prisma.institution.deleteMany();
   await prisma.feedbackTemplate.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.reminder.deleteMany();
@@ -60,6 +61,9 @@ async function createAccount(name: string, email: string) {
 async function main() {
   console.log("• Membersihkan data lama…");
   await wipe();
+
+  // Institusi demo (singleton) -> setup wizard dilewati saat demo sudah ter-seed.
+  await prisma.institution.create({ data: { name: "Kampus Demo" } });
 
   console.log("• Membuat akun (Better Auth)…");
   const admin = await createAccount("Admin Maubisa", "admin@maubisa.id");

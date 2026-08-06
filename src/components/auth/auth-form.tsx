@@ -132,7 +132,7 @@ export function AuthForm({ mode }: { mode: Mode }) {
   );
 }
 
-function Field({
+export function Field({
   id,
   label,
   type,

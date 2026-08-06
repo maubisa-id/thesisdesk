@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import { getInstitution } from "@/lib/setup";
 
 const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 const mono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"], display: "swap" });
@@ -19,11 +20,15 @@ const cabinet = localFont({
   ],
 });
 
-export const metadata: Metadata = {
-  title: "Maubisa Lulus · Bimbingan Skripsi",
-  description: "Teman bimbingan skripsimu, dari judul sampai sidang.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const inst = await getInstitution();
+  const name = inst?.name ?? "Thesisdesk";
+  return {
+    title: `${name} · Bimbingan Skripsi`,
+    description: "Platform bimbingan skripsi, dari judul sampai sidang.",
+    robots: { index: false, follow: false },
+  };
+}
 
 // Web Interface Guidelines: theme-color untuk UI browser + color-scheme light.
 export const viewport: Viewport = {
