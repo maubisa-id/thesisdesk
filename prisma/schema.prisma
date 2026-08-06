@@ -34,6 +34,32 @@ model Institution {
   @@map("institutions")
 }
 
+// Struktur akademik: Fakultas -> Program Studi. Klien/tutor bisa ditaut ke prodi + angkatan.
+model Faculty {
+  id        Int            @id @default(autoincrement())
+  name      String
+  code      String?
+  createdAt DateTime       @default(now()) @map("created_at")
+  programs  StudyProgram[]
+
+  @@map("faculties")
+}
+
+model StudyProgram {
+  id        Int      @id @default(autoincrement())
+  facultyId Int      @map("faculty_id")
+  name      String
+  code      String?
+  level     String   @default("S1") // D3 | S1 | S2 | S3
+  createdAt DateTime @default(now()) @map("created_at")
+
+  faculty Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  users   User[]
+
+  @@index([facultyId])
+  @@map("study_programs")
+}
+
 // ── BAGIAN A : IDENTITAS SISI-THESIS (kanonik di core; ditautkan coreUserId) ──
 
 // Profil sisi-thesis. Identitas kanonik di maubisa_core; `coreUserId` menautkan ke sana.
@@ -51,12 +77,15 @@ model User {
   tutorId         Int?      @map("tutor_id")
   lastSeenAt      DateTime? @map("last_seen_at") // presence "online"
   calendarToken   String?   @unique @map("calendar_token") // token feed ICS (langganan kalender)
+  studyProgramId  Int?      @map("study_program_id") // prodi (opsional)
+  angkatan        Int?      // tahun masuk, mis. 2024
   createdAt       DateTime  @default(now()) @map("created_at")
   updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
   deletedAt       DateTime? @map("deleted_at")
 
   tutor   User?  @relation("TutorKlien", fields: [tutorId], references: [id], onDelete: SetNull)
   klien   User[] @relation("TutorKlien")
+  studyProgram StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
 
   bimbinganAsClient Bimbingan[] @relation("BimbinganClient")
   bimbinganAsTutor  Bimbingan[] @relation("BimbinganTutor")
@@ -75,6 +104,7 @@ model User {
 
   @@index([role])
   @@index([tutorId])
+  @@index([studyProgramId])
   @@map("users")
 }
 

@@ -36,6 +36,7 @@ export function navFor(role: Role): NavGroup[] {
         section: "Kelola",
         items: [
           { href: "/admin/pengguna", label: "Pengguna", icon: "users" },
+          { href: "/admin/prodi", label: "Fakultas & Prodi", icon: "target" },
           { href: "/admin/bimbingan", label: "Bimbingan", icon: "cap" },
           { href: "/admin/audit", label: "Jejak audit", icon: "shield" },
         ],

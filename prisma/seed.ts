@@ -25,6 +25,7 @@ const at = (base: Date, h: number, m = 0) => {
 async function wipe() {
   // Urutan aman (anak dulu). SQLite FK cascade juga aktif, tapi eksplisit lebih jelas.
   await prisma.institution.deleteMany();
+  await prisma.faculty.deleteMany();
   await prisma.feedbackTemplate.deleteMany();
   await prisma.notification.deleteMany();
   await prisma.reminder.deleteMany();
@@ -64,6 +65,15 @@ async function main() {
 
   // Institusi demo (singleton) -> setup wizard dilewati saat demo sudah ter-seed.
   await prisma.institution.create({ data: { name: "Kampus Demo" } });
+
+  // Struktur akademik contoh (Fakultas -> Prodi).
+  const ft = await prisma.faculty.create({ data: { name: "Fakultas Teknik", code: "FT" } });
+  await prisma.studyProgram.createMany({
+    data: [
+      { facultyId: ft.id, name: "Teknik Informatika", code: "TI", level: "S1" },
+      { facultyId: ft.id, name: "Sistem Informasi", code: "SI", level: "S1" },
+    ],
+  });
 
   console.log("• Membuat akun (Better Auth)…");
   const admin = await createAccount("Admin Maubisa", "admin@maubisa.id");
