@@ -1,0 +1,47 @@
+# ── thesis-next: docker-compose (app + MySQL) ────────────────────────────────
+# Deploy institusi satu-perintah:  docker compose up -d
+# Lalu buka http://localhost:3100. Ganti semua *_CHANGE_ME sebelum produksi.
+#
+# Untuk coba cepat TANPA MySQL (SQLite): jalankan `docker run -p 3100:3100 thesis-next`
+# (image default DB_PROVIDER=sqlite). compose ini untuk deploy nyata (MySQL persisten).
+
+services:
+  db:
+    image: mysql:8.4
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: thesis
+      MYSQL_USER: thesis
+      MYSQL_PASSWORD: thesis_CHANGE_ME
+      MYSQL_ROOT_PASSWORD: root_CHANGE_ME
+    volumes:
+      - db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uthesis", "-pthesis_CHANGE_ME"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "3100:3100"
+    environment:
+      NODE_ENV: production
+      DB_PROVIDER: mysql
+      DATABASE_URL: "mysql://thesis:thesis_CHANGE_ME@db:3306/thesis"
+      # Wajib: string acak panjang (mis. `openssl rand -base64 32`)
+      BETTER_AUTH_SECRET: CHANGE_ME_random_long_secret
+      BETTER_AUTH_URL: "http://localhost:3100"
+      NEXT_PUBLIC_APP_URL: "http://localhost:3100"
+      # Admin pertama (email dipisah koma)
+      ADMIN_EMAILS: "admin@example.edu"
+    # Terapkan skema ke DB lalu jalankan server (prisma db push idempoten).
+    command: sh -c "npx prisma db push --skip-generate && node server.js"
+
+volumes:
+  db-data:

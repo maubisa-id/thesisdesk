@@ -1,0 +1,423 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* == Design tokens - "Ruang Belajar yang Tenang" (DESIGN.md, Fondasi §2) ==
+   Kanvas cream + navy akademik tunggal. Operate mode: tenang, scanable, brand di detail. */
+@theme {
+  --color-canvas: #faf8f5;
+  --color-cream-100: #f5f1ea;
+  --color-cream-200: #ece5d9;
+
+  --color-ink: #141414;
+  --color-ink-soft: #3f3f46;
+  --color-muted: #6b6b6b;
+
+  --color-sidebar: #0a48b7;
+
+  --color-brand-50: #eef4fe;
+  --color-brand-100: #dbe6fb;
+  --color-brand-200: #b6ccf6;
+  --color-brand-300: #7f9ff0;
+  --color-brand-400: #3f6be0;
+  --color-brand-500: #0a48b7;
+  --color-brand-600: #083a95;
+  --color-brand-700: #062c70;
+  --color-brand-900: #05204f;
+  --color-brand: #0a48b7;
+
+  --color-sky: #419fe8;
+  --color-teal: #5099bb;
+  --color-lime: #9acc25;
+  --color-rose-accent: #c81e2e;
+  --color-lime-accent: #4a6a0f;
+  --color-lime-bright: #5a8a12;
+
+  --ease-fluid: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out-quint: cubic-bezier(0.16, 1, 0.3, 1);
+
+  --radius-bezel: 1.75rem;
+
+  --shadow-soft: 0 1px 2px rgba(11, 15, 23, 0.05), 0 20px 45px -28px rgba(11, 15, 23, 0.28);
+  --shadow-lift: 0 1px 2px rgba(11, 15, 23, 0.06), 0 34px 60px -30px rgba(11, 15, 23, 0.4);
+  --shadow-brand: 0 1px 2px rgba(10, 72, 183, 0.12), 0 18px 40px -12px rgba(10, 72, 183, 0.45);
+}
+
+@theme inline {
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-cabinet), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SFMono-Regular", monospace;
+  --font-heading: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+/* Tipografi fluid (skala mulus lintas layar) */
+@utility text-fluid-hero {
+  font-size: clamp(1.75rem, 1.25rem + 2.2vw, 2.5rem);
+  line-height: 1.1;
+}
+@utility text-fluid-title {
+  font-size: clamp(1.25rem, 1.05rem + 0.9vw, 1.6rem);
+  line-height: 1.2;
+}
+@utility text-fluid-body {
+  font-size: clamp(0.875rem, 0.84rem + 0.16vw, 0.95rem);
+}
+
+:root {
+  color-scheme: light;
+  /* Kanvas cream hangat "meja belajar tenang" (DESIGN.md #faf8f5) - bukan putih klinis.
+     Kartu tetap putih -> kedalaman lembut tanpa shadow keras (material honesty). */
+  --background: oklch(0.979 0.006 83);
+  --foreground: oklch(0.205 0.01 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.205 0.01 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.205 0.01 260);
+  /* Brand: Maubisa cobalt #0a48b7 (fidelitas merek, aksen tunggal). */
+  --primary: oklch(0.43 0.16 262);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.968 0.004 255);
+  --secondary-foreground: oklch(0.3 0.02 262);
+  --muted: oklch(0.968 0.004 255);
+  --muted-foreground: oklch(0.53 0.015 260);
+  --accent: oklch(0.955 0.015 258);
+  --accent-foreground: oklch(0.43 0.16 262);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0.004 258);
+  --input: oklch(0.922 0.004 258);
+  --ring: oklch(0.43 0.16 262);
+  --chart-1: oklch(0.43 0.16 262);
+  --chart-2: oklch(0.6 0.13 250);
+  --chart-3: oklch(0.7 0.12 200);
+  --chart-4: oklch(0.75 0.15 130);
+  --chart-5: oklch(0.65 0.2 45);
+  --radius: 0.65rem;
+  --sidebar: oklch(1 0 0);
+  --sidebar-foreground: oklch(0.3 0.015 262);
+  --sidebar-primary: oklch(0.43 0.16 262);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.955 0.02 258);
+  --sidebar-accent-foreground: oklch(0.43 0.16 262);
+  --sidebar-border: oklch(0.928 0.004 258);
+  --sidebar-ring: oklch(0.43 0.16 262);
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: color-mix(in oklch, var(--primary) 18%, transparent);
+}
+
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5 {
+    font-family: var(--font-cabinet), ui-sans-serif, system-ui, sans-serif;
+    letter-spacing: -0.02em;
+  }
+
+  /* Fokus keyboard konsisten (WCAG 2.2, focus-visible only) */
+  a:focus-visible,
+  button:focus-visible,
+  [role="button"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* Target sentuh nyaman (WCAG 2.5.5 ≥44px) di perangkat touch */
+@media (pointer: coarse) {
+  button,
+  a[role="button"],
+  [role="button"],
+  summary,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    min-height: 44px;
+  }
+  button,
+  a[role="button"],
+  [role="button"] {
+    min-width: 44px;
+  }
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(15, 23, 42, 0.16) transparent;
+}
+*::-webkit-scrollbar {
+  width: 11px;
+  height: 11px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.14);
+  border-radius: 9999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(15, 23, 42, 0.26);
+  background-clip: content-box;
+}
+
+/* == Signature atmosphere: "Kertas & Garis" (paper & rule) ==
+   Motif akademik yang MENENANGKAN, pengganti blur-blob gradient generik (AI-tell).
+   Header dashboard = kertas notebook: garis tipis cobalt (repeating-linear-gradient) +
+   aura cobalt lembut di sudut. Kalem, khas produk skripsi, bukan SaaS generik. */
+.dash-header {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--card);
+  background-image:
+    radial-gradient(620px 300px at 106% -55%, color-mix(in oklch, var(--color-brand-500) 12%, transparent), transparent 72%),
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 33px,
+      color-mix(in oklch, var(--color-brand-500) 5%, transparent) 33px,
+      color-mix(in oklch, var(--color-brand-500) 5%, transparent) 34px
+    );
+}
+/* Garis merah margin notebook (aksen khas kertas akademik), sangat tipis di kiri. */
+.dash-header::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: 2.25rem;
+  width: 1px;
+  background: color-mix(in oklch, var(--color-rose-accent) 22%, transparent);
+  pointer-events: none;
+}
+@media (max-width: 640px) {
+  .dash-header::before { display: none; }
+}
+
+/* Umpan balik taktil (bencium: immediate feedback) untuk aksi utama. */
+.press {
+  transition: transform 0.14s var(--ease-out-quint), box-shadow 0.14s var(--ease-out-quint);
+}
+.press:active {
+  transform: translateY(1px) scale(0.99);
+}
+@media (prefers-reduced-motion: reduce) {
+  .press { transition: none; }
+  .press:active { transform: none; }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ── Flashcard 3D flip (Simulasi Sidang, mode latihan) ──
+   Flip lewat rotateY + preserve-3d; sisi belakang backface-hidden. Hormati reduced-motion:
+   ganti flip jadi cross-fade instan supaya tetap fungsional tanpa gerak berat. */
+.flashcard {
+  perspective: 1600px;
+}
+.flashcard-inner {
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.5s var(--ease-out-quint);
+}
+.flashcard.is-flipped .flashcard-inner {
+  transform: rotateY(180deg);
+}
+.flashcard-face {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.flashcard-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .flashcard-inner {
+    transition: none;
+    transform-style: flat;
+  }
+  .flashcard.is-flipped .flashcard-inner {
+    transform: none;
+  }
+  .flashcard-back {
+    transform: none;
+  }
+  /* Reduced motion: tampilkan sisi sesuai state tanpa rotasi 3D */
+  .flashcard:not(.is-flipped) .flashcard-back {
+    display: none;
+  }
+  .flashcard.is-flipped .flashcard-front {
+    display: none;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 8px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.animate-rise {
+  animation: riseIn 0.72s var(--ease-out-quint) both;
+}
+.animate-fade {
+  animation: fadeIn 0.4s var(--ease-fluid) both;
+}
+.animate-page {
+  animation: pageIn 0.34s var(--ease-fluid) both;
+}
+
+.animate-delay-100 { animation-delay: 0.06s; }
+.animate-delay-200 { animation-delay: 0.12s; }
+.animate-delay-300 { animation-delay: 0.18s; }
+.animate-delay-400 { animation-delay: 0.24s; }
+.animate-delay-500 { animation-delay: 0.3s; }
+.animate-delay-600 { animation-delay: 0.36s; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-rise,
+  .animate-fade,
+  .animate-page {
+    animation: none;
+  }
+  /* Web Interface Guidelines: hormati preferensi kurangi-gerak secara global,
+     termasuk transisi hover/drag-and-drop yang ditambahkan di komponen. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}

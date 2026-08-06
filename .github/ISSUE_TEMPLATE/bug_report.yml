@@ -1,0 +1,54 @@
+name: Bug report
+description: Report something that is broken or behaves unexpectedly.
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please do not include secrets,
+        access tokens, or real student data in this report.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the bug.
+      placeholder: When I click "Ajukan sesi" the modal shifts and the file preview disappears.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The exact steps so a maintainer can reproduce it.
+      placeholder: |
+        1. Log in as klien (rina@student.ac.id)
+        2. Go to Jadwal
+        3. Click "Ajukan sesi"
+        4. Attach a PDF
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: dropdown
+    id: role
+    attributes:
+      label: Affected role
+      options:
+        - Klien (student)
+        - Tutor
+        - Admin
+        - Not role-specific
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: Deploy target, browser, OS, and DB provider (SQLite/MySQL).
+      placeholder: Docker compose, Chrome 128, Windows 11, SQLite
+    validations:
+      required: true
