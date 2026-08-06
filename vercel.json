@@ -1,0 +1,4 @@
+{
+  "framework": "nextjs",
+  "buildCommand": "node scripts/db-provider.mjs && prisma generate && prisma db push && next build"
+}

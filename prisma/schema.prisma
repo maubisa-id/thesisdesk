@@ -1,0 +1,539 @@
+// thesis_next (thesis.contoh.id) - Prisma schema.
+// LOKAL: provider sqlite (nol instalasi). PROD: ganti ke "mysql" + DATABASE_URL Cloud SQL
+// (db_thesis). Skema ini adalah sumber kanonik (single source of truth).
+//
+// Catatan lokal (SQLite):
+//  • enum & JSON disimpan sebagai String (SQLite tak punya tipe itu); nilai divalidasi di app (zod).
+//  • Kontrak hub-and-spoke (ADR-001/002): identitas/tagihan/akses milik hub_core. Di sini
+//    `coreUserId` = penunjuk angka ke core (tanpa FK lintas-DB). `entitlements` di-mirror lokal
+//    hanya untuk demo gerbang default-deny; sumber kebenaran tetap core.
+//  ? Kolom [PII/ENKRIPSI] (message.content, bimbinganLog.summary, annotation.body)
+//    dienkripsi di level aplikasi saat produksi (defense-in-depth).
+// MIGRASI KE MySQL: samakan (1) datasource.provider "mysql" (2) DB_PROVIDER=mysql
+// (3) DATABASE_URL mysql://. scripts/db-provider.mjs mengatur (1) saat build; guard db-config.ts
+// melempar error bila tak konsisten.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Identitas institusi (singleton, satu baris). Diisi lewat setup wizard first-run (src/app/setup)
+// tanpa edit env/kode; dipakai untuk judul/branding. Self-host = satu institusi per deploy.
+model Institution {
+  id        Int      @id @default(autoincrement())
+  name      String
+  logoUrl   String?  @map("logo_url")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  users     User[]
+  bimbingan Bimbingan[]
+
+  @@map("institutions")
+}
+
+// Struktur akademik: Fakultas -> Program Studi. Klien/tutor bisa ditaut ke prodi + angkatan.
+model Faculty {
+  id        Int            @id @default(autoincrement())
+  name      String
+  code      String?
+  createdAt DateTime       @default(now()) @map("created_at")
+  programs  StudyProgram[]
+
+  @@map("faculties")
+}
+
+model StudyProgram {
+  id        Int      @id @default(autoincrement())
+  facultyId Int      @map("faculty_id")
+  name      String
+  code      String?
+  level     String   @default("S1") // D3 | S1 | S2 | S3
+  createdAt DateTime @default(now()) @map("created_at")
+
+  faculty Faculty @relation(fields: [facultyId], references: [id], onDelete: Cascade)
+  users   User[]
+
+  @@index([facultyId])
+  @@map("study_programs")
+}
+
+// ── BAGIAN A : IDENTITAS SISI-THESIS (kanonik di core; ditautkan coreUserId) ──
+
+// Profil sisi-thesis. Identitas kanonik di hub_core; `coreUserId` menautkan ke sana.
+// `role` = peran domain thesis (admin/tutor/klien). `tutorId` = self-ref klien -> tutornya.
+model User {
+  id              Int       @id @default(autoincrement())
+  coreUserId      Int?      @unique @map("core_user_id") // -> hub_core.users.id (tanpa FK)
+  authUserId      String?   @unique @map("auth_user_id") // -> auth_users.id (Better Auth)
+  name            String
+  email           String    @unique
+  emailVerifiedAt DateTime? @map("email_verified_at")
+  role            String    @default("klien") // admin | tutor | klien
+  phone           String?
+  avatarUrl       String?   @map("avatar_url")
+  tutorId         Int?      @map("tutor_id")
+  lastSeenAt      DateTime? @map("last_seen_at") // presence "online"
+  calendarToken   String?   @unique @map("calendar_token") // token feed ICS (langganan kalender)
+  studyProgramId  Int?      @map("study_program_id") // prodi (opsional)
+  institutionId   Int?      @map("institution_id") // tenant (multi-tenant; null = single-tenant/self-host)
+  angkatan        Int?      // tahun masuk, mis. 2024
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  tutor   User?  @relation("TutorKlien", fields: [tutorId], references: [id], onDelete: SetNull)
+  klien   User[] @relation("TutorKlien")
+  studyProgram StudyProgram? @relation(fields: [studyProgramId], references: [id], onDelete: SetNull)
+  institution  Institution?  @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  bimbinganAsClient Bimbingan[] @relation("BimbinganClient")
+  bimbinganAsTutor  Bimbingan[] @relation("BimbinganTutor")
+  schedulesAsTutor  Schedule[]  @relation("ScheduleTutor")
+  schedulesAsKlien  Schedule[]  @relation("ScheduleKlien")
+  modulesUploaded   Module[]    @relation("ModuleUploader")
+  modulesReceived   Module[]    @relation("ModuleReceiver")
+  messagesSent      Message[]   @relation("MsgSender")
+  messagesReceived  Message[]   @relation("MsgReceiver")
+
+  milestones        Milestone[]
+  reminders         Reminder[]
+  entitlements      Entitlement[]
+  roles             UserRole[]
+  notifications     Notification[]
+
+  @@index([role])
+  @@index([tutorId])
+  @@index([studyProgramId])
+  @@index([institutionId])
+  @@map("users")
+}
+
+// Notifikasi in-app persisten (cermin tabel notifications Laravel/Filament). Dibuat oleh aksi
+// domain (jadwal disetujui, berkas baru, pesan baru, pengajuan bimbingan). Bell dropdown + toast.
+model Notification {
+  id         Int       @id @default(autoincrement())
+  userId     Int       @map("user_id")
+  coreUserId Int?      @map("core_user_id")
+  type       String // schedule_approved | schedule_request | doc_new | message_new | defense | system
+  title      String
+  body       String?
+  color      String    @default("info") // success | info | warning | danger
+  actionUrl  String?   @map("action_url")
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, readAt])
+  @@map("notifications")
+}
+
+// Peran platform (RBAC, ADR-005). Dibaca untuk aksi sensitif. Default-deny.
+model UserRole {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @map("user_id")
+  role      String   // admin | staff | instructor | mentor
+  scope     String   @default("global") // global | thesis | app | kelas | book
+  grantedBy Int?     @map("granted_by")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, role, scope])
+  @@index([role, scope])
+  @@map("user_roles")
+}
+
+// Hak akses (mirror lokal dari hub_core.entitlements). Default-deny: fitur dicek ke sini
+// (scope='thesis', status='active', belum lewat expiresAt). Sumber kebenaran = core (webhook).
+model Entitlement {
+  id          Int       @id @default(autoincrement())
+  userId      Int       @map("user_id")
+  coreUserId  Int?      @map("core_user_id")
+  scope       String    @default("thesis")
+  productCode String?   @map("product_code")
+  status      String    @default("active") // active | pending | expired | cancelled
+  source      String    @default("manual")
+  startsAt    DateTime? @map("starts_at")
+  expiresAt   DateTime? @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, scope, status])
+  @@map("entitlements")
+}
+
+// ── BAGIAN B : BIMBINGAN INTI ──
+
+// Entitas bimbingan per klien. 1 klien bisa punya banyak bimbingan.
+model Bimbingan {
+  id           Int       @id @default(autoincrement())
+  clientUserId Int       @map("client_user_id")
+  coreUserId   Int?      @map("core_user_id")
+  tutorUserId  Int?      @map("tutor_user_id")
+  serviceType  String    @default("skripsi") @map("service_type")
+  thesisTitle  String?   @map("thesis_title")
+  status       String    @default("ongoing") // ongoing | paused | done | cancelled
+  stage        String    @default("proposal") // proposal | seminar | sidang | selesai
+  catatan      String?
+  institutionId Int?     @map("institution_id") // tenant (multi-tenant; null = single-tenant)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  client User  @relation("BimbinganClient", fields: [clientUserId], references: [id], onDelete: Cascade)
+  tutor  User? @relation("BimbinganTutor", fields: [tutorUserId], references: [id], onDelete: SetNull)
+  institution Institution? @relation(fields: [institutionId], references: [id], onDelete: SetNull)
+
+  milestones       Milestone[]
+  logs             BimbinganLog[]
+  annotations      DocumentAnnotation[]
+  stageApprovals   StageApproval[]
+  defenses         Defense[]
+
+  @@index([clientUserId, status])
+  @@index([tutorUserId])
+  @@index([institutionId])
+  @@map("bimbingan")
+}
+
+// Persetujuan naik tahap (proposal -> seminar -> sidang) oleh kaprodi. Jejak keputusan
+// dipakai untuk berita acara / lembar pengesahan. Satu baris = satu permintaan naik tahap.
+model StageApproval {
+  id                Int       @id @default(autoincrement())
+  bimbinganId       Int       @map("bimbingan_id")
+  stage             String // tahap yang diajukan untuk dilewati: proposal | seminar | sidang
+  status            String    @default("pending") // pending | approved | rejected
+  requestedByUserId Int       @map("requested_by_user_id")
+  decidedByUserId   Int?      @map("decided_by_user_id")
+  note              String?
+  decidedAt         DateTime? @map("decided_at")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  bimbingan Bimbingan @relation(fields: [bimbinganId], references: [id], onDelete: Cascade)
+
+  @@index([bimbinganId, status])
+  @@index([status])
+  @@map("stage_approvals")
+}
+
+// Sidang akhir (defense): jadwal, panel penguji, hasil. Sumber berita acara / lembar pengesahan.
+// examiners disimpan JSON [{name, role}] karena penguji bisa bukan user sistem (dosen tamu).
+model Defense {
+  id              Int       @id @default(autoincrement())
+  bimbinganId     Int       @map("bimbingan_id")
+  scheduledAt     DateTime? @map("scheduled_at")
+  location        String? // ruang sidang atau tautan daring
+  status          String    @default("scheduled") // scheduled | done | cancelled
+  result          String? // lulus | lulus_revisi | tidak_lulus
+  examiners       String? // JSON: [{ name, role }]
+  notes           String?
+  createdByUserId Int       @map("created_by_user_id")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  bimbingan Bimbingan @relation(fields: [bimbinganId], references: [id], onDelete: Cascade)
+
+  @@index([bimbinganId])
+  @@map("defenses")
+}
+
+// Jadwal sesi bimbingan (GMeet).
+model Schedule {
+  id            Int       @id @default(autoincrement())
+  tutorId       Int       @map("tutor_id")
+  klienId       Int       @map("klien_id")
+  topic         String
+  scheduledAt   DateTime  @map("scheduled_at")
+  status        String    @default("pending") // pending | approved | menunggu_klien | selesai | rejected
+  session       String?
+  sesiKe        Int?      @map("sesi_ke") // nomor pertemuan (Pertemuan N), diberikan saat disetujui
+  gmeetLink     String?   @map("gmeet_link")
+  gcalEventId   String?   @map("gcal_event_id")
+  tutorNote     String?   @map("tutor_note")
+  recordingLink String?   @map("recording_link")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  tutor   User           @relation("ScheduleTutor", fields: [tutorId], references: [id], onDelete: Cascade)
+  klien   User           @relation("ScheduleKlien", fields: [klienId], references: [id], onDelete: Cascade)
+  modules Module[]
+  logs    BimbinganLog[]
+
+  @@index([tutorId, status])
+  @@index([klienId, scheduledAt])
+  @@index([status])
+  @@map("schedules")
+}
+
+// Dokumen bimbingan (upload klien/tutor) + versi.
+model Module {
+  id           Int       @id @default(autoincrement())
+  title        String?
+  filePath     String?   @map("file_path")
+  originalName String?   @map("original_name")
+  fileSize     Int?      @map("file_size")
+  fileMime     String?   @map("file_mime")
+  uploaderId   Int       @map("uploader_id")
+  receiverId   Int?      @map("receiver_id")
+  scheduleId   Int?      @map("schedule_id")
+  note         String?
+  reviewStatus String    @default("uploaded") @map("review_status") // uploaded | in_review | reviewed
+  version      Int       @default(1)
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  uploader    User                 @relation("ModuleUploader", fields: [uploaderId], references: [id], onDelete: Cascade)
+  receiver    User?                @relation("ModuleReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  schedule    Schedule?            @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  annotations DocumentAnnotation[]
+
+  @@index([uploaderId])
+  @@index([receiverId, reviewStatus])
+  @@map("modules")
+}
+
+// Chat tutor <-> klien.
+model Message {
+  id         Int       @id @default(autoincrement())
+  senderId   Int       @map("sender_id")
+  receiverId Int       @map("receiver_id")
+  content    String // [PII/ENKRIPSI]
+  attachment String?
+  roleSender String    @map("role_sender") // tutor | klien
+  readAt     DateTime? @map("read_at")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt  DateTime? @map("deleted_at")
+
+  sender   User @relation("MsgSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MsgReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([senderId, receiverId, createdAt])
+  @@index([receiverId])
+  @@map("messages")
+}
+
+// ── BAGIAN C : FITUR USP SKRIPSI (digerbang entitlement scope='thesis') ──
+
+// Target per BAB / tahap skripsi per bimbingan (Progres BAB - Kanban).
+model Milestone {
+  id          Int       @id @default(autoincrement())
+  bimbinganId Int       @map("bimbingan_id")
+  ownerId     Int       @map("owner_id") // -> users.id (klien pemilik) - filter RBAC
+  coreUserId  Int?      @map("core_user_id")
+  chapter     String    @default("other") // proposal|bab1..bab5|revisi|sidang|other
+  title       String
+  status      String    @default("todo") // todo | in_progress | review | done | blocked
+  dueDate     DateTime? @map("due_date")
+  completedAt DateTime? @map("completed_at")
+  sort        Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+
+  bimbingan Bimbingan  @relation(fields: [bimbinganId], references: [id], onDelete: Cascade)
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
+
+  @@index([bimbinganId, status])
+  @@index([ownerId])
+  @@map("milestones")
+}
+
+// Catatan tiap sesi + action items.
+model BimbinganLog {
+  id           Int       @id @default(autoincrement())
+  bimbinganId  Int       @map("bimbingan_id")
+  scheduleId   Int?      @map("schedule_id")
+  authorUserId Int       @map("author_user_id")
+  summary      String // [PII/ENKRIPSI]
+  actionItems  String?   @map("action_items") // JSON: [{text, done, due}]
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt    DateTime? @map("deleted_at")
+
+  bimbingan Bimbingan @relation(fields: [bimbinganId], references: [id], onDelete: Cascade)
+  schedule  Schedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+
+  @@index([bimbinganId, createdAt])
+  @@map("bimbingan_logs")
+}
+
+// Anotasi/komentar revisi inline pada modules + thread.
+model DocumentAnnotation {
+  id             Int       @id @default(autoincrement())
+  moduleId       Int       @map("module_id")
+  bimbinganId    Int?      @map("bimbingan_id")
+  authorUserId   Int       @map("author_user_id")
+  threadParentId Int?      @map("thread_parent_id")
+  anchor         String? // JSON: {page, rect:[x,y,w,h], quote}
+  body           String // [PII/ENKRIPSI]
+  resolved       Boolean   @default(false)
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  module    Module               @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  bimbingan Bimbingan?           @relation(fields: [bimbinganId], references: [id], onDelete: SetNull)
+  parent    DocumentAnnotation?  @relation("AnnotationThread", fields: [threadParentId], references: [id], onDelete: Cascade)
+  replies   DocumentAnnotation[] @relation("AnnotationThread")
+
+  @@index([moduleId, resolved])
+  @@index([threadParentId])
+  @@map("document_annotations")
+}
+
+
+
+
+
+
+// Pengingat deadline/sesi (worker: email/WA/in-app).
+model Reminder {
+  id          Int       @id @default(autoincrement())
+  ownerId     Int       @map("owner_id")
+  coreUserId  Int?      @map("core_user_id")
+  bimbinganId Int?      @map("bimbingan_id")
+  milestoneId Int?      @map("milestone_id")
+  channel     String    @default("inapp") // email | wa | inapp
+  remindAt    DateTime  @map("remind_at")
+  status      String    @default("scheduled") // scheduled | sent | failed | cancelled
+  payload     String? // JSON
+  sentAt      DateTime? @map("sent_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  owner     User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  milestone Milestone? @relation(fields: [milestoneId], references: [id], onDelete: SetNull)
+
+  @@index([status, remindAt])
+  @@index([ownerId])
+  @@map("reminders")
+}
+
+// ── BAGIAN D : GOVERNANCE ──
+
+// Pustaka snippet umpan balik tutor (penunjang TUTOR): quick-insert saat anotasi/log -> feedback
+// terstruktur & konsisten (blueprint §5.7 "H6 template feedback"). owner_user_id = POINTER tanpa
+// FK (pola bimbingan_logs); null = pustaka bersama/kurasi tim. body = boilerplate non-PII.
+model FeedbackTemplate {
+  id          Int       @id @default(autoincrement())
+  ownerUserId Int?      @map("owner_user_id") // core/user id tutor pemilik; null = pustaka bersama
+  title       String
+  body        String // isi snippet (non-PII, boleh {{placeholder}})
+  category    String    @default("umum") // metodologi | sitasi | struktur | bahasa | data | umum
+  scope       String    @default("private") // private | shared
+  usageCount  Int       @default(0) @map("usage_count")
+  sortOrder   Int       @default(0) @map("sort_order")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@index([ownerUserId, category])
+  @@index([scope, category])
+  @@map("feedback_templates")
+}
+
+// Jejak audit aksi/akses sensitif (WAJIB). Append-only; JANGAN memuat PII mentah di metadata.
+model AuditLog {
+  id              Int      @id @default(autoincrement())
+  actorCoreUserId Int?     @map("actor_core_user_id")
+  actorUserId     Int?     @map("actor_user_id")
+  actorRole       String?  @map("actor_role")
+  action          String // login|doc.view|doc.download|pii.read|bimbingan.update|role.change|export|erasure|...
+  targetType      String?  @map("target_type")
+  targetId        String?  @map("target_id")
+  ipAddress       String?  @map("ip_address")
+  userAgent       String?  @map("user_agent")
+  metadata        String? // JSON (non-PII)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  @@index([actorCoreUserId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId])
+  @@map("audit_logs")
+}
+
+// ── Better Auth (tabel identitas/sesi dikelola library) ──
+
+model AuthUser {
+  id               String   @id
+  name             String
+  email            String   @unique
+  emailVerified    Boolean  @default(false)
+  image            String?
+  twoFactorEnabled Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  sessions  AuthSession[]
+  accounts  AuthAccount[]
+  twoFactor AuthTwoFactor[]
+
+  @@map("auth_users")
+}
+
+model AuthTwoFactor {
+  id                      String   @id
+  secret                  String
+  backupCodes             String
+  verified                Boolean  @default(false)
+  failedVerificationCount Int      @default(0)
+  userId                  String
+  user                    AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_two_factors")
+}
+
+model AuthSession {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("auth_sessions")
+}
+
+model AuthAccount {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  AuthUser  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("auth_accounts")
+}
+
+model AuthVerification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("auth_verifications")
+}

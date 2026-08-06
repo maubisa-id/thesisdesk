@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an improvement or new capability.
+labels: ["enhancement", "triage"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem or motivation
+      description: What job is the user trying to get done? What is painful today?
+      placeholder: Tutors cannot see which clients are stuck for more than 7 days without opening each one.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+    validations:
+      required: false
+  - type: checkboxes
+    id: scope
+    attributes:
+      label: Scope check
+      description: This project is an open, self-hostable thesis management system.
+      options:
+        - label: This is a generic thesis-supervision capability (not specific to one institution's internal process).
+          required: false
