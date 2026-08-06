@@ -1,14 +1,17 @@
 import { getSessionUser } from "@/lib/session";
 import { hasThesisAccess } from "@/lib/entitlement";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateCalendarToken } from "@/lib/calendar";
 import { SectionTitle, Badge, EmptyState } from "@/components/kit";
 import { NoAccess, DbError } from "@/components/states";
 import { RequestScheduleForm, TutorScheduleActions, SessionNotesDialog, KlienScheduleActions } from "@/components/features/jadwal-actions";
+import { CalendarSubscribe } from "@/components/features/calendar-subscribe";
 import { IconCalendar, IconVideo, IconClock } from "@/components/icons";
 import { tanggalRail, waktu, SCHEDULE_STATUS_LABEL, nowMs, meetJoinState, MEET_JOIN_LABEL, recordingState } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 const ACCOUNT_URL = process.env.NEXT_PUBLIC_ACCOUNT_URL ?? "https://akun.maubisa.id";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3100";
 
 type ScheduleRow = Awaited<ReturnType<typeof loadSchedules>>[number];
 
@@ -50,6 +53,11 @@ export default async function JadwalPage() {
     .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
   const past = schedules.filter((s) => !upcoming.includes(s));
 
+  const calendarUrl =
+    user.role !== "admin"
+      ? `${APP_URL}/api/calendar/${await getOrCreateCalendarToken(user.id)}`
+      : null;
+
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <SectionTitle
@@ -77,6 +85,8 @@ export default async function JadwalPage() {
       {past.length > 0 ? (
         <Timeline heading="Riwayat" rows={past} now={now} role={user.role} statusLabel={statusLabel} muted />
       ) : null}
+
+      {calendarUrl ? <CalendarSubscribe url={calendarUrl} /> : null}
     </div>
   );
 }
