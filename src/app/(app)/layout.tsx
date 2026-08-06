@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/session";
 import { navFor } from "@/lib/nav";
 import { getUnreadNotifCount } from "@/lib/notifications";
 import { processDueReminders } from "@/lib/reminders";
+import { getInstitution } from "@/lib/setup";
 import { AppShell } from "@/components/shell";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
   await processDueReminders(user.id);
 
   const unread = await getUnreadNotifCount(user.id);
+  const institution = await getInstitution();
 
   return (
     <AppShell
@@ -24,6 +26,8 @@ export default async function AppGroupLayout({ children }: { children: React.Rea
       nav={navFor(user.role)}
       accountUrl={ACCOUNT_URL}
       unreadNotif={unread}
+      brandName={institution?.name}
+      logoUrl={institution?.logoUrl}
     >
       {children}
     </AppShell>

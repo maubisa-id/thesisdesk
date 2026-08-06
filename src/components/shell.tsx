@@ -30,12 +30,16 @@ export function AppShell({
   nav,
   accountUrl,
   unreadNotif,
+  brandName,
+  logoUrl,
   children,
 }: {
   user: { name: string; email: string; role: string; avatarUrl?: string | null };
   nav: NavGroup[];
   accountUrl: string;
   unreadNotif: number;
+  brandName?: string | null;
+  logoUrl?: string | null;
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -93,10 +97,16 @@ export function AppShell({
     </nav>
   );
 
+  const displayName = brandName ?? "Lulus";
   const brand = (
-    <Link href="/" className="flex items-center gap-2 px-4 py-4" onClick={() => setMobileOpen(false)} aria-label="Maubisa Lulus, ke dashboard">
-      <Logo variant="white" className="h-6" />
-      <span className="font-heading text-[15px] font-semibold tracking-tight text-sidebar-foreground/85">Lulus</span>
+    <Link href="/" className="flex items-center gap-2 px-4 py-4" onClick={() => setMobileOpen(false)} aria-label={`${displayName}, ke dashboard`}>
+      {logoUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element -- logo institusi = URL sembarang, bukan aset lokal
+        <img src={logoUrl} alt={displayName} className="h-6 w-auto select-none" />
+      ) : (
+        <Logo variant="white" className="h-6" />
+      )}
+      <span className="font-heading text-[15px] font-semibold tracking-tight text-sidebar-foreground/85">{displayName}</span>
     </Link>
   );
 

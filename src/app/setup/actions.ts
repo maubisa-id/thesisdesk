@@ -7,6 +7,7 @@ import { isSetupDone } from "@/lib/setup";
 
 const schema = z.object({
   institutionName: z.string().trim().min(2).max(120),
+  logoUrl: z.string().trim().url().max(500).optional(),
   name: z.string().trim().min(2).max(120),
   email: z.string().trim().email(),
   password: z.string().min(8).max(200),
@@ -20,11 +21,11 @@ export async function completeSetup(
   if (await isSetupDone()) return { ok: false, error: "Setup sudah selesai." };
   const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, error: "Data belum lengkap atau tidak valid." };
-  const { institutionName, name, email, password } = parsed.data;
+  const { institutionName, logoUrl, name, email, password } = parsed.data;
   try {
     await auth.api.signUpEmail({ body: { email, password, name } });
     await prisma.$transaction([
-      prisma.institution.create({ data: { name: institutionName } }),
+      prisma.institution.create({ data: { name: institutionName, logoUrl: logoUrl ?? null } }),
       prisma.user.update({ where: { email }, data: { role: "admin" } }),
     ]);
     return { ok: true };

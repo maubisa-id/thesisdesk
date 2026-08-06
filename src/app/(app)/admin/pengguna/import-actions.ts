@@ -4,6 +4,7 @@ import { randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { getSessionUser } from "@/lib/session";
+import { mailerConfigured, sendMail } from "@/lib/mailer";
 
 export type ImportRow = { email: string; name: string; status: "dibuat" | "dilewati" | "gagal"; note?: string; tempPassword?: string };
 export type ImportResult = { ok: true; rows: ImportRow[]; created: number; skipped: number; failed: number } | { ok: false; error: string };
@@ -67,7 +68,15 @@ export async function importUsers(csvText: string): Promise<ImportResult> {
     try {
       await auth.api.signUpEmail({ body: { email, name, password: tempPassword } });
       await prisma.user.update({ where: { email }, data: { role, studyProgramId, angkatan } });
-      out.push({ email, name, status: "dibuat", tempPassword });
+      let emailed = false;
+      if (mailerConfigured()) {
+        emailed = await sendMail(
+          email,
+          "Akun bimbingan skripsi Anda",
+          `Halo ${name},\n\nAkun Anda telah dibuat.\nEmail: ${email}\nKata sandi sementara: ${tempPassword}\n\nSilakan masuk dan segera ganti kata sandi Anda.`,
+        );
+      }
+      out.push({ email, name, status: "dibuat", tempPassword, note: emailed ? "email terkirim" : undefined });
       created++;
     } catch {
       out.push({ email, name, status: "gagal", note: "gagal membuat akun" });
