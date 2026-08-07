@@ -9,9 +9,12 @@
 
 **Satu ruang untuk bimbingan skripsi, dari progres BAB sampai sidang.**
 
-Platform bimbingan skripsi yang siap dipakai kampus, instansi, atau tim bimbingan mandiri: progres
-BAB, penjadwalan sesi plus Google Meet, dokumen berversi dengan anotasi inline, dan chat tutor-klien.
-Kode ini kami pakai sungguhan di `thesis.maubisa.id`, lalu kami buka agar Anda tidak perlu mulai dari nol.
+Platform bimbingan skripsi siap pakai untuk kampus, program studi, atau tim bimbingan mandiri:
+progres BAB per milestone, penjadwalan sesi dengan Google Meet otomatis, dokumen berversi dengan
+anotasi inline, chat tutor-mahasiswa, dan modul akademik kampus (SSO, SIAKAD, sidang, multi-tenant).
+Ini bukan prototipe atau demo template kosong: kode yang sama persis menjalankan
+[`thesis.maubisa.id`](https://thesis.maubisa.id) untuk mahasiswa dan tutor sungguhan setiap hari.
+Kami membukanya supaya Anda tidak perlu menghabiskan waktu tim membangun ulang yang sudah teruji.
 
 <p>
   <a href="https://thesis.maubisa.id"><img alt="Demo langsung" src="https://img.shields.io/badge/Demo%20langsung-thesis.maubisa.id-0a48b7?logo=vercel&logoColor=white"></a>
@@ -47,46 +50,104 @@ Kode ini kami pakai sungguhan di `thesis.maubisa.id`, lalu kami buka agar Anda t
 > [!TIP]
 > **Coba dulu sebelum dipakai: [thesis.maubisa.id](https://thesis.maubisa.id).**
 > Masuk sebagai klien `rina@student.ac.id`, tutor `andi.tutor@maubisa.id`, atau admin
-> `admin@maubisa.id` (sandi `password123` untuk semuanya).
+> `admin@maubisa.id` (sandi `password123` untuk semuanya). Ini bukan sandbox terpisah - Anda
+> login ke instance produksi yang sama yang dipakai pengguna asli.
+
+## Kenapa Anda butuh ini
+
+Kalau Anda pernah mencoba mengelola bimbingan skripsi lewat kombinasi grup WhatsApp, Google Form,
+dan spreadsheet, Anda tahu persis masalahnya: progres mahasiswa tercecer di banyak tempat, tutor
+lupa catatan sesi minggu lalu, revisi dokumen menumpuk jadi puluhan pesan yang sulit ditelusuri,
+dan admin baru sadar seorang mahasiswa "hilang" setelah berbulan-bulan tanpa progres.
+
+Membangun sistem yang benar untuk masalah ini bukan proyek akhir pekan. Anda butuh dashboard per
+peran yang masuk akal (mahasiswa tidak boleh mengintip data mahasiswa lain), papan progres per bab,
+penjadwalan yang benar-benar terhubung ke Google Meet, dokumen berversi dengan anotasi alih-alih
+revisi berserakan di chat, sampai jejak audit untuk kepatuhan. Tim berpengalaman biasanya butuh
+berminggu-minggu untuk itu semua, dan bagian yang paling gampang salah - hak akses dan keamanan -
+justru yang paling sering diremehkan waktunya.
+
+Thesisdesk sudah menyelesaikan semua itu, dan sudah terbukti jalan di dunia nyata: kode yang sama
+menangani mahasiswa dan tutor produksi di `thesis.maubisa.id` setiap hari, bukan cuma lolos demo.
+Anda tinggal ganti merek, sesuaikan alur bila perlu, dan jalankan.
 
 ## Untuk siapa ini
 
-Pakai Thesisdesk kalau Anda butuh salah satu dari berikut:
-
-- Sistem bimbingan skripsi/tesis untuk kampus, program studi, atau lembaga bimbingan.
-- Ruang kerja tutor-mahasiswa: progres bab, jadwal sesi, dokumen, dan diskusi dalam satu tempat.
-- Fondasi yang aman dan rapi untuk dikembangkan sendiri, bukan mulai dari halaman kosong.
-
-Bagian yang paling melelahkan, yaitu peran-akses yang benar (mahasiswa hanya melihat miliknya),
-jejak audit, penjadwalan Google Meet, dan versi dokumen, sudah kami tangani. Anda tinggal ganti
-merek, sesuaikan alur, dan jalankan.
-
-## Kenapa ada
-
-Membangun sistem bimbingan yang utuh itu makan waktu: dashboard per peran, papan progres, jadwal
-plus tautan rapat, dokumen berversi dengan anotasi, pesan, sampai keamanan akses antar-mahasiswa.
-Semua itu sudah jadi di sini, siap Anda pakai ulang. Fokusnya satu: **membantu mahasiswa lulus
-lebih cepat, dengan tutor yang punya gambaran jelas.**
+- **Program studi atau fakultas** yang masih mengelola bimbingan lewat WhatsApp grup dan tanda
+  tangan basah, dan butuh sistem yang mencatat progres, sesi, dan dokumen di satu tempat yang bisa
+  diaudit - lengkap dengan struktur Fakultas/Prodi, alur persetujuan kaprodi, dan integrasi SIAKAD.
+- **Lembaga bimbingan atau tutor privat** yang menjual jasa pendampingan skripsi/tesis dan butuh
+  dashboard profesional untuk klien mereka, bukan folder Google Drive yang berantakan.
+- **Tim produk atau startup EdTech** yang ingin membangun layanan serupa tanpa menghabiskan
+  berbulan-bulan membangun ulang RBAC, audit trail, dan integrasi kalender dari nol.
+- **Developer yang mempelajari pola arsitektur Next.js kelas produksi**: multi-peran, SSO
+  hub-and-spoke opsional, federasi admin API, dan keamanan default-deny - semua kode sungguhan yang
+  sudah dipakai pengguna asli, bukan contoh dari tutorial.
 
 ## Fitur
 
+### Inti bimbingan
+
 - **Dashboard per peran.** Mahasiswa (cincin progres BAB, jadwal, tugas), tutor (antrean review,
-  klien yang macet 7 hari lebih, jadwal), admin (metrik plus jejak audit).
+  klien yang macet 7 hari lebih, jadwal), admin (metrik plus jejak audit) - masing-masing melihat
+  yang relevan untuknya saja, bukan satu dashboard generik untuk semua orang.
 - **Progres BAB.** Papan Kanban milestone per bab (proposal, BAB 1-5, revisi, sidang) yang bisa
-  dioperasikan penuh lewat keyboard.
+  dioperasikan penuh lewat keyboard, sehingga tutor dan mahasiswa selalu tahu persis di tahap mana.
 - **Jadwal dan sesi.** Mahasiswa mengajukan, tutor menyetujui, tautan **Google Meet** dibuat
-  otomatis, plus catatan sesi dan rekaman.
+  otomatis lewat Calendar API (bukan tautan manual yang gampang basi), plus catatan sesi dan
+  rekaman supaya progres tiap pertemuan tidak menguap begitu sesi selesai.
 - **Dokumen berversi.** Unggah naskah, simpan versi, beri **anotasi inline** dan diskusi ber-thread
-  langsung di dokumen.
-- **Pesan.** Chat tutor-mahasiswa dengan indikator kehadiran.
+  langsung di dokumen - revisi jadi jejak yang bisa ditelusuri, bukan pesan yang tenggelam di chat.
+- **Pesan real-time.** Chat tutor-mahasiswa dengan indikator kehadiran, terpisah rapi dari alur
+  revisi dokumen supaya percakapan penting tidak bercampur dengan obrolan santai.
 - **Notifikasi.** Pemberitahuan dalam aplikasi (jadwal disetujui, berkas baru, pesan) dengan penanda
-  belum-dibaca; email bersifat opsional lewat hub.
-- **Keamanan.** Akses default-deny berbasis hak (scope thesis), RBAC terpusat yang mencegah
-  mahasiswa mengintip data mahasiswa lain, jejak audit append-only, validasi zod, header keamanan,
-  rate-limit, dan pengecekan tipe berkas dari magic-byte.
-- **Federasi admin (opsional).** API tipis `/admin/v1/*` (JWT HS256 server-to-server, mati secara
-  default) agar sebuah pusat operator bisa menugaskan tutor, mengatur judul, dan memantau beban
-  tutor tanpa login ulang. Lihat [docs/federation-admin-api.md](./docs/federation-admin-api.md).
+  belum-dibaca; email bersifat opsional lewat hub, jadi tetap jalan penuh tanpa SMTP sendiri.
+- **Kuota sesi per paket.** Model paket = jatah pertemuan (mis. Sempro 8 sesi, Wisuda 16 sesi),
+  bukan langganan waktu - cocok untuk model bisnis bimbingan yang jual per paket, bukan per bulan.
+
+### Modul akademik kampus
+
+Bagian ini yang biasanya paling mahal dibangun sendiri, dan sepenuhnya opsional (mati secara
+default sampai Anda mengaktifkannya lewat environment variable):
+
+- **Struktur Fakultas dan Program Studi** dengan alur bertingkat (proposal → seminar proposal →
+  sidang) plus **approval kaprodi** di tiap tahap kenaikan.
+- **Sidang akhir**: penjadwalan, panel penguji, dan pembuatan berita acara PDF otomatis.
+- **Integrasi SIAKAD**: webhook untuk sinkron roster mahasiswa dan API baca status skripsi, jadi
+  data akademik tidak perlu diketik ulang secara manual.
+- **SSO kampus via OIDC generik** (env-gated) - cocok untuk Google Workspace, Microsoft Entra,
+  Keycloak, dan penyedia identitas kampus lain tanpa perlu tulis integrasi khusus.
+- **White-label branding per institusi** dan **impor pengguna massal via CSV**, supaya onboarding
+  satu angkatan tidak perlu dibuat akun satu-satu.
+- **Fondasi multi-tenant** (`institution_id` per kampus) untuk yang mau menjalankan satu instance
+  untuk beberapa institusi sekaligus.
+
+### Keamanan dan tata kelola
+
+- Akses **default-deny** berbasis hak (scope `thesis`): fitur bimbingan hanya terbuka untuk
+  pengguna dengan entitlement aktif, gerbang RBAC terpusat mencegah mahasiswa mengintip data
+  mahasiswa lain.
+- **Jejak audit append-only** untuk aksi sensitif (baca dokumen, ubah peran, review, dll.),
+  memenuhi kebutuhan kepatuhan ISO/SOC2/PDP.
+- Validasi input dengan **zod** di setiap boundary Server Action, header keamanan standar
+  (HSTS, CSP nonce, frame-ancestors), rate-limit pada endpoint auth, dan pengecekan tipe berkas
+  dari **magic-byte** (bukan sekadar ekstensi file, supaya `.exe` tak bisa menyamar jadi `.pdf`).
+- **Federasi admin (opsional).** API tipis `/admin/v1/*` (JWT HS256 server-to-server, anti-replay,
+  mati secara default) agar sebuah pusat operator bisa menugaskan tutor, mengatur judul, dan
+  memantau beban tutor tanpa login ulang. Lihat [docs/federation-admin-api.md](./docs/federation-admin-api.md).
+
+## Kenapa bukan alternatif lain
+
+- **Dibanding LMS umum (Moodle, Google Classroom, dsb.):** LMS dirancang untuk kelas dan materi
+  belajar, bukan alur bimbingan satu-ke-satu dengan milestone per bab, kuota sesi per paket, dan
+  approval berjenjang kaprodi. Memaksakannya butuh banyak akal-akalan yang tetap terasa janggal.
+- **Dibanding kombinasi spreadsheet + WhatsApp + Google Drive:** berjalan di awal, tapi tidak
+  terskala. Tidak ada kontrol akses per peran, tidak ada jejak audit, dan progres gampang hilang
+  begitu jumlah mahasiswa bertambah.
+- **Dibanding membangun dari nol:** peran-akses yang benar, jejak audit, integrasi kalender, dan
+  keamanan upload adalah bagian yang paling mudah salah dan paling lama dikerjakan. Thesisdesk
+  sudah menyelesaikan dan mengujinya di produksi, jadi tim Anda bisa langsung ke bagian yang
+  benar-benar membedakan produk Anda.
 
 ## Cara kerjanya
 
@@ -108,15 +169,20 @@ tampil di dalam aplikasi.
 
 ## Tech stack
 
-| Bagian | Teknologi |
-|--------|-----------|
-| Framework | [Next.js 16](https://nextjs.org/) (App Router, Server Components, Turbopack) |
-| UI | [React 19](https://react.dev/) + [Tailwind CSS v4](https://tailwindcss.com/) + shadcn / Base UI |
-| Bahasa | [TypeScript](https://www.typescriptlang.org/) (strict) |
-| ORM | [Prisma 6](https://www.prisma.io/) (SQLite untuk dev, MySQL untuk produksi) |
-| Auth | [Better Auth 1.6](https://www.better-auth.com/) (email + password, cookie SSO-ready) |
-| Penyimpanan dokumen | [Google Cloud Storage](https://cloud.google.com/storage) (opsional; default lokal saat dev) |
-| Desain | Sistem "Ruang Belajar yang Tenang" (cream + cobalt, Cabinet Grotesk + Geist, WCAG 2.2 AA) |
+| Bagian | Teknologi | Kenapa ini |
+|--------|-----------|------------|
+| Framework | [Next.js 16](https://nextjs.org/) (App Router, Server Components, Turbopack) | Server Components memangkas JS di klien; satu framework untuk halaman, API, dan middleware. |
+| UI | [React 19](https://react.dev/) + [Tailwind CSS v4](https://tailwindcss.com/) + shadcn / Base UI | Komponen bisa dibaca dan diubah langsung, bukan tersembunyi di balik library UI tertutup. |
+| Bahasa | [TypeScript](https://www.typescriptlang.org/) (strict) | Tipe end-to-end dari database sampai komponen, kesalahan ketahuan saat build. |
+| ORM | [Prisma 6](https://www.prisma.io/) (SQLite untuk dev, MySQL untuk produksi) | Nol-setup di lokal (SQLite), migrasi aman ke MySQL terkelola saat produksi. |
+| Auth | [Better Auth 1.6](https://www.better-auth.com/) (email + password, cookie SSO-ready) | Auth modern tanpa vendor lock-in, siap dihubungkan ke SSO kampus. |
+| Penyimpanan dokumen | [Google Cloud Storage](https://cloud.google.com/storage) (opsional; default lokal saat dev) | Dokumen mahasiswa (PII) di bucket privat dengan signed URL, bukan URL publik. |
+| Desain | Sistem "Ruang Belajar yang Tenang" (cream + cobalt, Cabinet Grotesk + Geist, WCAG 2.2 AA) | Kontras dan target sentuh diuji, bukan sekadar terlihat rapi di desktop. |
+
+Angka konkret di baliknya: **24 model data** (Prisma) mencakup peran, entitlement, milestone,
+dokumen, jadwal, audit, hingga struktur akademik kampus; **18 halaman** dan **13 route API**;
+**~47 komponen React**; dan **33 automated test** (Vitest) yang mengunci logika RBAC, federasi
+JWT, dan feed kalender ICS supaya regresi ketahuan sebelum sampai ke pengguna.
 
 ## Mulai cepat
 
@@ -152,6 +218,41 @@ docker compose up             # http://localhost:3100, migrasi + generate otomat
 **Akun demo (sandi `password123`):** admin `admin@thesisdesk.test`, tutor `andi.tutor@thesisdesk.test`
 atau `sinta.tutor@thesisdesk.test`, mahasiswa `rina@student.ac.id`, `dinda@student.ac.id`,
 `bagus@student.ac.id`. Butuh Node 22 (lihat [`.nvmrc`](./.nvmrc)).
+
+## Pertanyaan yang sering muncul
+
+**Ini beneran dipakai produksi, atau cuma demo template?**
+Beneran dipakai. Ini persis kode yang menjalankan [thesis.maubisa.id](https://thesis.maubisa.id)
+hari ini. Coba langsung pakai akun demo di bagian atas README ini - itu instance produksi yang sama,
+bukan sandbox terpisah yang dipoles buat pamer.
+
+**Apakah saya wajib pakai integrasi Maubisa (hub akun, notifikasi, federasi)?**
+Tidak. Semua integrasi eksternal itu opsional dan mati secara default. Kosongkan env-nya dan
+Thesisdesk tetap jalan penuh sebagai aplikasi mandiri, termasuk notifikasi (tetap tampil in-app).
+
+**Boleh dipakai komersial? Ada biaya lisensi?**
+Boleh, gratis, termasuk untuk kampus dan bisnis bimbingan berbayar. Lisensinya AGPL-3.0: kalau
+Anda menjalankan versi modifikasi sebagai layanan jaringan untuk publik, source modifikasi itu
+wajib ikut dibuka bagi penggunanya. Baca bagian [Lisensi](#lisensi) untuk detail lengkapnya.
+
+**Fitur kampus (SIAKAD, SSO, sidang) bikin lebih berat kalau saya cuma butuh bimbingan sederhana?**
+Tidak. Semuanya env-gated - kalau env-nya kosong, endpoint terkait otomatis nonaktif (balas 503
+atau disembunyikan dari navigasi) dan tidak menambah beban di alur yang Anda pakai.
+
+**Apakah brandingnya bisa saya ganti sepenuhnya?**
+Bisa, dan sudah didesain untuk itu. Ikon aplikasi adalah SVG inline (bukan file gambar terkunci),
+seed data sudah netral, dan ada wizard setup untuk isi nama plus logo institusi tanpa sentuh kode.
+Lihat [Buat jadi milik Anda](#buat-jadi-milik-anda).
+
+**Kalau saya fork, apakah saya kebagian pembaruan berikutnya?**
+Iya, kalau Anda fork lewat tombol GitHub (bukan "Use this template" atau `degit`), Anda bisa
+menarik pembaruan lewat `git fetch upstream` kapan saja perubahan baru masuk ke `main`.
+
+**Kenapa Next.js, bukan Laravel/Django/Rails?**
+Produksi awalnya memang Laravel; stack ini adalah hasil migrasi ke Next.js supaya satu bahasa
+(TypeScript) dipakai dari database sampai UI, dan Server Components memangkas JavaScript yang
+dikirim ke browser. Kalau tim Anda lebih nyaman di stack lain, struktur datanya (lihat
+`prisma/schema.prisma`) tetap jadi referensi model domain yang bisa diporting.
 
 ## Environment
 
@@ -205,14 +306,17 @@ src/
     (app)/            # area login (shell + nav per peran)
       progres, jadwal, dokumen, chat, notifikasi
       klien           # tutor: klien saya
-      admin/{pengguna,bimbingan,audit}       # panel admin
+      sidang          # simulasi & jadwal sidang akhir
+      admin/{pengguna,bimbingan,audit,prodi}   # panel admin + struktur akademik
     admin/v1/         # API federasi (JWT S2S, env-gated)
-    masuk, daftar     # auth
-    api/{auth,cron,portal}
+    api/{auth,cron,portal,siakad,calendar}     # integrasi SIAKAD, portal dokumen, kalender ICS
+    masuk, daftar, setup                        # auth + wizard first-run
   components/{ui,shell,dashboard,features,auth,states,icons}
   lib/{prisma,auth,session,entitlement,rbac,audit,federation,actions,queries,
-       notify,gcs,format,nav}
-prisma/               # schema.prisma, seed.ts
+       notify,gcs,siakad,format,nav}
+prisma/               # schema.prisma (24 model), seed.ts
+test/                 # Vitest: federation, rbac, ics
+docs/                 # kontrak API federasi (Markdown + OpenAPI 3.1)
 ```
 
 ## Skrip
@@ -222,6 +326,7 @@ prisma/               # schema.prisma, seed.ts
 | `npm run dev` | server pengembangan (port 3100) |
 | `npm run build` / `npm start` | build dan jalankan produksi |
 | `npm run lint` | ESLint |
+| `npm test` | Vitest (federasi JWT, RBAC, feed ICS) |
 | `npm run db:setup` | generate Prisma client + buat/sinkron DB |
 | `npm run seed` | isi data contoh dan akun demo |
 
@@ -229,9 +334,28 @@ prisma/               # schema.prisma, seed.ts
 
 Akses bersifat default-deny: fitur bimbingan hanya terbuka untuk pengguna dengan hak aktif, dan
 setiap query difilter per pengguna sehingga mahasiswa tidak bisa mengintip data mahasiswa lain.
-Aksi sensitif tercatat di jejak audit append-only. Endpoint federasi memverifikasi tanda tangan JWT
-secara timing-safe, menolak `alg=none`, dan mengecek ulang invariant-nya sendiri. Detail dan cara
-melapor ada di [SECURITY.md](./SECURITY.md).
+Aksi sensitif tercatat di jejak audit append-only dengan retensi minimal 12 bulan untuk kebutuhan
+kepatuhan ISO/SOC2/PDP. Endpoint federasi memverifikasi tanda tangan JWT secara timing-safe,
+menolak `alg=none`, dan mengecek ulang invariant-nya sendiri di setiap panggilan, bukan cuma
+percaya token yang lolos verifikasi awal.
+
+Ini bukan janji kosong: 33 automated test mengunci perilaku RBAC dan federasi supaya perubahan
+kode yang melonggarkan akses ketahuan sebelum di-merge, dan CI menjalankannya di setiap push
+([status CI](https://github.com/maubisa-id/thesisdesk/actions/workflows/ci.yml)). Menemukan celah
+keamanan? Jangan buka issue publik - ikuti proses pelaporan privat di [SECURITY.md](./SECURITY.md).
+
+## Yang belum ada (biar Anda tidak kaget)
+
+Supaya ekspektasinya jujur sejak awal - hal-hal berikut sengaja belum dibangun:
+
+- **Mode suara AI penguji sidang** ada placeholder UI-nya, tapi mekanismenya ("Segera") belum aktif.
+- **Notifikasi push mobile** belum ada; kanal yang tersedia adalah in-app dan email opsional lewat hub.
+- **Multi-bahasa (i18n)** belum diimplementasikan; UI saat ini Bahasa Indonesia saja.
+- **Billing/pembayaran** sengaja tidak dibangun di sini - itu tanggung jawab hub identitas Anda
+  sendiri (pola hub-and-spoke), bukan bagian dari Thesisdesk.
+
+Kalau salah satu ini jadi kebutuhan Anda, pull request dipersilakan - lihat
+[CONTRIBUTING.md](./CONTRIBUTING.md) untuk standar kode dan gate sebelum PR.
 
 ## Dokumentasi
 
